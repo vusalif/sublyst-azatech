@@ -146,7 +146,11 @@ app.post('/api/check-upcoming-billing', async (req, res) => {
 
         if (upcomingSubscriptions.length > 0 && emailAddress) {
             // Send notification
-            const notificationResponse = await fetch(`http://localhost:${PORT}/api/send-billing-notification`, {
+            const baseUrl = process.env.NODE_ENV === 'production' 
+                ? 'https://azatech.onrender.com' 
+                : `http://localhost:${PORT}`;
+            
+            const notificationResponse = await fetch(`${baseUrl}/api/send-billing-notification`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
