@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subscription Calendar</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -494,6 +495,189 @@
 
         .bar-chart-bar:hover {
             opacity: 0.7;
+        }
+
+        /* Line Chart Styles */
+        .line-chart-container {
+            background: white;
+            border: 2px solid black;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            height: 300px;
+            position: relative;
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 2px;
+        }
+
+        .line-chart-point {
+            background: black;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            position: absolute;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .line-chart-point:hover {
+            background: #666;
+            transform: scale(1.5);
+        }
+
+        .line-chart-line {
+            position: absolute;
+            height: 2px;
+            background: black;
+            transform-origin: left center;
+        }
+
+        /* Subscription Breakdown Styles */
+        .subscription-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .breakdown-item {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            min-width: 280px;
+            width: 100%;
+        }
+
+        .breakdown-item h4 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .breakdown-item p {
+            font-size: 14px;
+            color: #666;
+            margin: 5px 0;
+        }
+
+        .breakdown-item .price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #000000;
+        }
+
+        /* Breakdown Grid Layout */
+        .subscription-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            justify-items: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .subscription-details-container {
+                max-width: 100%;
+                margin: 0;
+            }
+            
+            .insights-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+            }
+            
+            .insight-item:nth-child(n) {
+                grid-column: 1;
+                grid-row: auto;
+            }
+            
+            .subscription-breakdown {
+                grid-template-columns: 1fr;
+                max-width: 100%;
+            }
+            
+            .breakdown-item {
+                min-width: auto;
+            }
+        }
+
+        /* Subscription Details Container */
+        .subscription-details-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Insights Grid Styles */
+        .insights-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .insight-item:nth-child(1) {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        .insight-item:nth-child(2) {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        .insight-item:nth-child(3) {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .insight-item:nth-child(4) {
+            grid-column: 2;
+            grid-row: 2;
+        }
+
+        .insight-item:nth-child(5) {
+            grid-column: 1;
+            grid-row: 3;
+        }
+
+        .insight-item:nth-child(6) {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        .insight-item {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .insight-item h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .insight-item p {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .insight-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #000000;
+            margin: 10px 0;
         }
 
         .custom-tooltip {
@@ -1369,12 +1553,120 @@
             color: #ccc;
         }
 
+        /* Dark mode bar chart */
+        body.dark-mode .bar-chart-container {
+            background: #1a1a1a;
+            border-color: #333;
+        }
+
+        body.dark-mode .bar-chart-bar {
+            background: #ffffff;
+        }
+
+        body.dark-mode .bar-chart-bar:hover {
+            background: #cccccc;
+        }
+
+        /* Dark mode chart container */
+        body.dark-mode .chart-container {
+            background: #2a2a2a;
+            border-color: #333;
+        }
+
+        body.dark-mode .chart-title {
+            color: #ffffff !important;
+        }
+
+        /* Dark mode line chart */
+        body.dark-mode .line-chart-container {
+            background: #1e1e1e;
+            border-color: #333;
+        }
+
+        body.dark-mode .line-chart-point {
+            background: #ffffff;
+        }
+
+        body.dark-mode .line-chart-point:hover {
+            background: #cccccc;
+        }
+
+        body.dark-mode .line-chart-line {
+            background: #ffffff;
+        }
+
+        /* Dark mode breakdown and insights */
+        body.dark-mode .breakdown-item,
+        body.dark-mode .insight-item {
+            background: #333333;
+            border-color: #444;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        body.dark-mode .breakdown-item:hover,
+        body.dark-mode .insight-item:hover {
+            background: #3a3a3a;
+            transform: translateY(-2px);
+        }
+
+        body.dark-mode .breakdown-item h4,
+        body.dark-mode .insight-item h4 {
+            color: #ffffff;
+        }
+
+        body.dark-mode .breakdown-item p,
+        body.dark-mode .insight-item p {
+            color: #cccccc;
+        }
+
+        body.dark-mode .breakdown-item .price,
+        body.dark-mode .insight-item .insight-value {
+            color: #ffffff !important;
+        }
+
+
         /* Dark mode title colors */
         body.dark-mode h3,
         body.dark-mode h4,
         body.dark-mode h5,
         body.dark-mode h6 {
             color: #ffffff !important;
+        }
+
+        /* Dark mode analytics summary */
+        body.dark-mode .analytics-summary {
+            background: #2a2a2a;
+            border-color: #333;
+        }
+
+        body.dark-mode .analytics-summary h4 {
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .analytics-summary p {
+            color: #cccccc !important;
+        }
+
+        /* Dark mode insights grid */
+        body.dark-mode .insights-grid {
+            background: transparent;
+        }
+
+        /* Dark mode subscription breakdown */
+        body.dark-mode .subscription-breakdown {
+            background: transparent;
+        }
+
+        /* Dark mode custom tooltip */
+        body.dark-mode .custom-tooltip {
+            background: #1a1a1a !important;
+            color: #ffffff !important;
+            border: 1px solid #333 !important;
+        }
+
+        /* Dark mode chart container hover effects */
+        body.dark-mode .chart-container:hover {
+            background: #2f2f2f;
         }
 
         /* Dark mode calendar day numbers */
@@ -1534,8 +1826,19 @@
         </div>
 
         <!-- Monthly Spending Bar Chart -->
-        <div class="bar-chart-container" id="monthlySpendingChart">
-            <!-- Bars will be dynamically generated here -->
+        <div class="chart-container">
+            <h3 class="chart-title">Monthly Spending</h3>
+            <div class="bar-chart-container" id="monthlySpendingChart">
+                <!-- Chart will be dynamically generated here -->
+            </div>
+        </div>
+
+        <!-- Subscription Details -->
+        <div class="chart-container subscription-details-container">
+            <h3 class="chart-title">Subscription Breakdown & Insights</h3>
+            <div class="subscription-breakdown" id="subscriptionBreakdown">
+                <!-- Subscription details will be generated here -->
+            </div>
         </div>
     </div>
 
@@ -1892,6 +2195,7 @@
                 }
             }
 
+
             addSubscription() {
                 const name = document.getElementById('subscriptionName').value;
                 const price = parseFloat(document.getElementById('subscriptionPrice').value);
@@ -2224,8 +2528,11 @@
                 document.getElementById('mostExpensive').textContent = mostExpensiveSubscription ? 
                     mostExpensiveSubscription.name : 'None';
 
-                // Update the monthly spending bar chart
+                // Update the monthly spending chart
                 this.renderMonthlySpendingChart();
+                
+                // Update subscription breakdown with insights
+                this.renderSubscriptionBreakdown();
             }
 
 
@@ -2338,9 +2645,18 @@
                 const chartContainer = document.getElementById('monthlySpendingChart');
                 const monthlyData = this.calculateMonthlySpending();
                 
-                // Clear existing bars
+                // Clear existing chart
                 chartContainer.innerHTML = '';
                 
+                if (monthlyData.length === 0) {
+                    chartContainer.innerHTML = '<p style="text-align: center; color: #666; padding: 50px;">No data available</p>';
+                    return;
+                }
+                
+                this.renderBarChart(chartContainer, monthlyData);
+            }
+
+            renderBarChart(container, monthlyData) {
                 // Get or create custom tooltip element
                 let tooltip = document.querySelector('.custom-tooltip');
                 if (!tooltip) {
@@ -2392,15 +2708,227 @@
                         tooltip.style.display = 'none';
                     });
                     
-                    chartContainer.appendChild(bar);
+                    container.appendChild(bar);
                 });
             }
+
 
             updateTooltipPosition(e, tooltip) {
                 const x = e.clientX + 10;
                 const y = e.clientY - 10;
                 tooltip.style.left = x + 'px';
                 tooltip.style.top = y + 'px';
+            }
+
+            renderMonthlySpendingLineChart() {
+                const chartContainer = document.getElementById('monthlySpendingLineChart');
+                const monthlyData = this.calculateMonthlySpending();
+                
+                // Clear existing chart
+                chartContainer.innerHTML = '';
+                
+                if (monthlyData.length === 0) {
+                    chartContainer.innerHTML = '<p style="text-align: center; color: #666; padding: 50px;">No data available</p>';
+                    return;
+                }
+                
+                // Find max spending for scaling
+                const maxSpending = Math.max(...monthlyData.map(data => data.spending), 1);
+                const containerHeight = 260; // 300px - 40px padding
+                const containerWidth = chartContainer.offsetWidth - 40; // Account for padding
+                
+                // Create SVG for line chart
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('width', '100%');
+                svg.setAttribute('height', '100%');
+                svg.style.position = 'absolute';
+                svg.style.top = '0';
+                svg.style.left = '0';
+                
+                // Create line path
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                let pathData = '';
+                
+                monthlyData.forEach((data, index) => {
+                    const x = (index / (monthlyData.length - 1)) * containerWidth;
+                    const y = containerHeight - (data.spending / maxSpending) * containerHeight;
+                    
+                    if (index === 0) {
+                        pathData += `M ${x} ${y}`;
+                    } else {
+                        pathData += ` L ${x} ${y}`;
+                    }
+                });
+                
+                path.setAttribute('d', pathData);
+                path.setAttribute('stroke', 'black');
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('fill', 'none');
+                svg.appendChild(path);
+                
+                // Add data points
+                monthlyData.forEach((data, index) => {
+                    const x = (index / (monthlyData.length - 1)) * containerWidth;
+                    const y = containerHeight - (data.spending / maxSpending) * containerHeight;
+                    
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', x);
+                    circle.setAttribute('cy', y);
+                    circle.setAttribute('r', '4');
+                    circle.setAttribute('fill', 'black');
+                    circle.setAttribute('cursor', 'pointer');
+                    
+                    // Add tooltip
+                    circle.addEventListener('mouseenter', (e) => {
+                        const tooltip = document.createElement('div');
+                        tooltip.className = 'custom-tooltip';
+                        tooltip.textContent = `${this.getMonthName(data.month)} ${data.year}\n$${data.spending.toFixed(2)}`;
+                        tooltip.style.display = 'block';
+                        document.body.appendChild(tooltip);
+                        this.updateTooltipPosition(e, tooltip);
+                    });
+                    
+                    circle.addEventListener('mouseleave', () => {
+                        const tooltip = document.querySelector('.custom-tooltip');
+                        if (tooltip) tooltip.remove();
+                    });
+                    
+                    svg.appendChild(circle);
+                });
+                
+                chartContainer.appendChild(svg);
+            }
+
+            renderSubscriptionBreakdown() {
+                const breakdownContainer = document.getElementById('subscriptionBreakdown');
+                breakdownContainer.innerHTML = '';
+                
+                if (this.subscriptions.length === 0) {
+                    breakdownContainer.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No subscriptions added yet</p>';
+                    return;
+                }
+                
+                // Calculate insights
+                const monthlyCost = this.calculateCurrentMonthSpending();
+                const yearlyCost = this.subscriptions.reduce((sum, sub) => {
+                    const price = sub.price;
+                    switch (sub.billingCycle) {
+                        case 'weekly': return sum + price * 52;
+                        case 'monthly': return sum + price * 12;
+                        case 'yearly': return sum + price;
+                        default: return sum;
+                    }
+                }, 0);
+                
+                const averagePerSubscription = monthlyCost / this.subscriptions.length;
+                const mostExpensive = Math.max(...this.subscriptions.map(sub => sub.price));
+                const budget = JSON.parse(localStorage.getItem('monthlyBudget')) || 0;
+                const budgetPercentage = budget > 0 ? (monthlyCost / budget) * 100 : 0;
+                
+                // Add insights section
+                const insightsSection = document.createElement('div');
+                insightsSection.className = 'insights-grid';
+                insightsSection.style.marginBottom = '20px';
+                
+                // Calculate additional metrics
+                const totalSubscriptions = this.subscriptions.length;
+                const weeklySubscriptions = this.subscriptions.filter(sub => sub.billingCycle === 'weekly').length;
+                const monthlySubscriptions = this.subscriptions.filter(sub => sub.billingCycle === 'monthly').length;
+                const yearlySubscriptions = this.subscriptions.filter(sub => sub.billingCycle === 'yearly').length;
+                const weeklyCost = this.subscriptions
+                    .filter(sub => sub.billingCycle === 'weekly')
+                    .reduce((sum, sub) => sum + sub.price, 0) * 4.33; // Convert to monthly
+                const monthlyCostWeekly = this.subscriptions
+                    .filter(sub => sub.billingCycle === 'monthly')
+                    .reduce((sum, sub) => sum + sub.price, 0);
+                const monthlyCostYearly = this.subscriptions
+                    .filter(sub => sub.billingCycle === 'yearly')
+                    .reduce((sum, sub) => sum + sub.price, 0) / 12;
+                const totalMonthlySubscriptions = weeklyCost + monthlyCostWeekly + monthlyCostYearly;
+
+                const insights = [
+                    {
+                        title: 'Average per Subscription',
+                        value: `$${averagePerSubscription.toFixed(2)}`,
+                        description: 'Monthly cost per subscription'
+                    },
+                    {
+                        title: 'Monthly Subscriptions',
+                        value: `${monthlySubscriptions}`,
+                        description: 'Number of monthly subscriptions'
+                    },
+                    {
+                        title: 'Most Expensive',
+                        value: `$${mostExpensive.toFixed(2)}`,
+                        description: 'Highest single subscription cost'
+                    },
+                    {
+                        title: 'Budget Usage',
+                        value: budget > 0 ? `${budgetPercentage.toFixed(1)}%` : 'Not set',
+                        description: budget > 0 ? 'Of your monthly budget' : 'Set a budget to track usage'
+                    },
+                    {
+                        title: 'Yearly Projection',
+                        value: `$${yearlyCost.toFixed(2)}`,
+                        description: 'Total projected yearly spending'
+                    },
+                    {
+                        title: 'Total Subscriptions',
+                        value: `${totalSubscriptions}`,
+                        description: 'All active subscriptions'
+                    }
+                ];
+                
+                insights.forEach(insight => {
+                    const item = document.createElement('div');
+                    item.className = 'insight-item';
+                    item.innerHTML = `
+                        <h4>${insight.title}</h4>
+                        <div class="insight-value">${insight.value}</div>
+                        <p>${insight.description}</p>
+                    `;
+                    insightsSection.appendChild(item);
+                });
+                
+                breakdownContainer.appendChild(insightsSection);
+                
+                // Group subscriptions by billing cycle (excluding monthly)
+                const grouped = {
+                    yearly: this.subscriptions.filter(sub => sub.billingCycle === 'yearly'),
+                    weekly: this.subscriptions.filter(sub => sub.billingCycle === 'weekly')
+                };
+                
+                // Add breakdown section
+                const breakdownSection = document.createElement('div');
+                breakdownSection.className = 'subscription-breakdown';
+                breakdownSection.style.marginTop = '20px';
+                
+                Object.keys(grouped).forEach(cycle => {
+                    if (grouped[cycle].length > 0) {
+                        const totalCost = grouped[cycle].reduce((sum, sub) => sum + sub.price, 0);
+                        const monthlyEquivalent = cycle === 'monthly' ? totalCost : 
+                                               cycle === 'yearly' ? totalCost / 12 : 
+                                               totalCost * 4.33;
+                        
+                        const item = document.createElement('div');
+                        item.className = 'breakdown-item';
+                        item.innerHTML = `
+                            <h4>${cycle.charAt(0).toUpperCase() + cycle.slice(1)} Subscriptions</h4>
+                            <div class="price">$${totalCost.toFixed(2)}</div>
+                            <p>${grouped[cycle].length} subscription${grouped[cycle].length > 1 ? 's' : ''}</p>
+                            <p>Monthly equivalent: $${monthlyEquivalent.toFixed(2)}</p>
+                        `;
+                        breakdownSection.appendChild(item);
+                    }
+                });
+                
+                breakdownContainer.appendChild(breakdownSection);
+            }
+
+
+            getMonthName(monthIndex) {
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                return months[monthIndex];
             }
 
             renderSubscriptionsList() {
@@ -2805,31 +3333,12 @@
             async testTelegramNotification() {
                 const telegramTestResult = document.getElementById('telegramTestResult');
                 
-                telegramTestResult.innerHTML = '<span style="color: #1976d2;">Sending test Telegram message...</span>';
-                
-                try {
-                    const response = await fetch('https://azatech.onrender.com/api/send-test-telegram', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        }
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        telegramTestResult.innerHTML = `
-                            <span style="color: #388e3c;">
-                                ✅ Test Telegram message sent successfully!<br>
-                                <small>Check your Telegram for the test message.</small>
-                            </span>
-                        `;
-                    } else {
-                        telegramTestResult.innerHTML = `<span style="color: #d32f2f;">❌ Error: ${result.error}</span>`;
-                    }
-                } catch (error) {
-                    telegramTestResult.innerHTML = `<span style="color: #d32f2f;">❌ Error: ${error.message}</span>`;
-                }
+                telegramTestResult.innerHTML = `
+                    <span style="color: #ff9800;">
+                        🚧 Telegram notifications coming soon!<br>
+                        <small>This feature is being deployed. Please check back later.</small>
+                    </span>
+                `;
             }
 
             async checkUpcomingBilling() {
