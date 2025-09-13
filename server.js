@@ -59,6 +59,10 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+app.get('/dashboard.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dashboard.html'));
+});
+
 // Test endpoint
 app.get('/api/test', (req, res) => {
     res.json({ success: true, message: 'API is working!' });
