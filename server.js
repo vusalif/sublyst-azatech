@@ -9,7 +9,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: true, // Allow all origins for now
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.static('.'));
 
@@ -32,9 +35,11 @@ app.get('/', (req, res) => {
 // Send test email
 app.post('/api/send-test-email', async (req, res) => {
     try {
+        console.log('Test email request received:', req.body);
         const { emailAddress } = req.body;
         
         if (!emailAddress) {
+            console.log('No email address provided');
             return res.status(400).json({ error: 'Email address is required' });
         }
 
@@ -60,11 +65,12 @@ app.post('/api/send-test-email', async (req, res) => {
         };
 
         await transporter.sendMail(mailOptions);
+        console.log('Test email sent successfully to:', emailAddress);
         res.json({ success: true, message: 'Test email sent successfully!' });
         
     } catch (error) {
         console.error('Error sending test email:', error);
-        res.status(500).json({ error: 'Failed to send test email' });
+        res.status(500).json({ error: 'Failed to send test email', details: error.message });
     }
 });
 
