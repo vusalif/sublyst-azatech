@@ -1595,6 +1595,27 @@
         </div>
         
         
+        <!-- Telegram Notification Settings -->
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee;">
+            <h4 style="margin-bottom: 20px; color: #333;">📱 Telegram Notifications</h4>
+            
+            <div class="setting-item">
+                <span class="setting-label">Enable Telegram Notifications</span>
+                <div class="setting-control">
+                    <div class="toggle-switch" id="enableTelegram">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="telegramSettings" style="display: none;">
+                <div style="margin: 20px 0;">
+                    <button class="test-button" onclick="calendar.testTelegramNotification()" style="width: 100%; margin-bottom: 10px;">Send Test Telegram Message</button>
+                    <div id="telegramTestResult" style="font-size: 14px; text-align: center;"></div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Email Notification Settings -->
         <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee;">
             <h4 style="margin-bottom: 20px; color: #333;">📧 Email Notifications</h4>
@@ -1800,6 +1821,11 @@
                 document.getElementById('enableNotifications').addEventListener('click', () => {
                     this.toggleSetting('enableNotifications');
                 });
+
+                // Telegram notifications toggle
+                document.getElementById('enableTelegram').addEventListener('click', () => {
+                    this.toggleSetting('enableTelegram');
+                });
             }
 
             toggleSetting(toggleId) {
@@ -1813,6 +1839,16 @@
                         emailSettings.style.display = 'block';
                     } else {
                         emailSettings.style.display = 'none';
+                    }
+                }
+                
+                // Handle telegram settings visibility
+                if (toggleId === 'enableTelegram') {
+                    const telegramSettings = document.getElementById('telegramSettings');
+                    if (toggle.classList.contains('active')) {
+                        telegramSettings.style.display = 'block';
+                    } else {
+                        telegramSettings.style.display = 'none';
                     }
                 }
                 
@@ -2566,22 +2602,41 @@
                 document.getElementById('notificationTime').value = settings.notificationTime || '12:00';
                 
                 const enableNotifications = settings.enableNotifications || false;
-                document.getElementById('enableNotifications').checked = enableNotifications;
+                const enableTelegram = settings.enableTelegram || false;
                 
-                // Set toggle visual state
-                const toggle = document.getElementById('enableNotifications');
+                document.getElementById('enableNotifications').checked = enableNotifications;
+                document.getElementById('enableTelegram').checked = enableTelegram;
+                
+                // Set toggle visual states
+                const emailToggle = document.getElementById('enableNotifications');
+                const telegramToggle = document.getElementById('enableTelegram');
+                
                 if (enableNotifications) {
-                    toggle.classList.add('active');
+                    emailToggle.classList.add('active');
                 } else {
-                    toggle.classList.remove('active');
+                    emailToggle.classList.remove('active');
                 }
                 
-                // Show/hide email settings based on toggle state
+                if (enableTelegram) {
+                    telegramToggle.classList.add('active');
+                } else {
+                    telegramToggle.classList.remove('active');
+                }
+                
+                // Show/hide settings based on toggle states
                 const emailSettings = document.getElementById('emailSettings');
+                const telegramSettings = document.getElementById('telegramSettings');
+                
                 if (enableNotifications) {
                     emailSettings.style.display = 'block';
                 } else {
                     emailSettings.style.display = 'none';
+                }
+                
+                if (enableTelegram) {
+                    telegramSettings.style.display = 'block';
+                } else {
+                    telegramSettings.style.display = 'none';
                 }
             }
 
@@ -2701,7 +2756,8 @@
                     emailAddress: document.getElementById('emailAddress').value,
                     notificationDays: document.getElementById('notificationDays').value,
                     notificationTime: document.getElementById('notificationTime').value,
-                    enableNotifications: document.getElementById('enableNotifications').checked
+                    enableNotifications: document.getElementById('enableNotifications').checked,
+                    enableTelegram: document.getElementById('enableTelegram').checked
                 };
                 localStorage.setItem('notificationSettings', JSON.stringify(settings));
             }
@@ -2721,7 +2777,7 @@
                 testResult.innerHTML = '<span style="color: #1976d2;">Sending test email...</span>';
                 
                 try {
-                    const response = await fetch('/api/send-test-email', {
+                    const response = await fetch('https://azatech.onrender.com/api/send-test-email', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -2746,12 +2802,42 @@
                 }
             }
 
+            async testTelegramNotification() {
+                const telegramTestResult = document.getElementById('telegramTestResult');
+                
+                telegramTestResult.innerHTML = '<span style="color: #1976d2;">Sending test Telegram message...</span>';
+                
+                try {
+                    const response = await fetch('https://azatech.onrender.com/api/send-test-telegram', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        telegramTestResult.innerHTML = `
+                            <span style="color: #388e3c;">
+                                ✅ Test Telegram message sent successfully!<br>
+                                <small>Check your Telegram for the test message.</small>
+                            </span>
+                        `;
+                    } else {
+                        telegramTestResult.innerHTML = `<span style="color: #d32f2f;">❌ Error: ${result.error}</span>`;
+                    }
+                } catch (error) {
+                    telegramTestResult.innerHTML = `<span style="color: #d32f2f;">❌ Error: ${error.message}</span>`;
+                }
+            }
+
             async checkUpcomingBilling() {
                 const settings = JSON.parse(localStorage.getItem('notificationSettings')) || {};
                 if (!settings.enableNotifications || !settings.emailAddress) return;
 
                 try {
-                    const response = await fetch('/api/check-upcoming-billing', {
+                    const response = await fetch('https://azatech.onrender.com/api/check-upcoming-billing', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -2778,7 +2864,7 @@
                 const emailAddress = settings.emailAddress;
                 
                 try {
-                    const response = await fetch('/api/send-billing-notification', {
+                    const response = await fetch('https://azatech.onrender.com/api/send-billing-notification', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
