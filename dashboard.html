@@ -1,0 +1,3515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription Calendar</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: white;
+            color: black;
+            line-height: 1.6;
+            padding-bottom: 120px;
+        }
+
+        .calendar-container {
+            max-width: 900px;
+            margin: 50px auto;
+            background: white;
+            border: 2px solid black;
+            border-radius: 8px;
+            padding: 20px;
+            transition: opacity 0.3s ease;
+        }
+
+        .calendar-container.hidden {
+            display: none;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .calendar-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: black;
+            border: 2px solid black;
+        }
+
+        .calendar-day-header {
+            background: black;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .calendar-day {
+            background: white;
+            min-height: 100px;
+            padding: 8px;
+            border: 1px solid #eee;
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-day:hover {
+            background: #f5f5f5;
+        }
+
+        .calendar-day.other-month {
+            background: #f9f9f9;
+            color: #999;
+        }
+
+        .calendar-day.today {
+            background: #f0f0f0;
+            font-weight: 600;
+        }
+
+        .calendar-day.selected {
+            background: #e0e0e0;
+        }
+
+        .calendar-day.has-subscription {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .calendar-day.has-subscription::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--subscription-color, #000);
+            opacity: 0.3;
+            z-index: 1;
+            transition: all 0.5s ease;
+        }
+
+        .calendar-day.has-multiple-subscriptions::before {
+            animation: colorTransition 10s ease-in-out infinite;
+        }
+
+        @keyframes colorTransition {
+            0% { 
+                background-color: var(--subscription-color-1); 
+                opacity: 0.3;
+                transform: scale(1);
+            }
+            25% { 
+                background-color: var(--subscription-color-2); 
+                opacity: 0.4;
+                transform: scale(1.01);
+            }
+            50% { 
+                background-color: var(--subscription-color-3); 
+                opacity: 0.3;
+                transform: scale(1);
+            }
+            75% { 
+                background-color: var(--subscription-color-4); 
+                opacity: 0.4;
+                transform: scale(1.01);
+            }
+            100% { 
+                background-color: var(--subscription-color-1); 
+                opacity: 0.3;
+                transform: scale(1);
+            }
+        }
+
+        .day-number {
+            font-weight: 500;
+            margin-bottom: 4px;
+            position: relative;
+            z-index: 2;
+            color: black;
+        }
+
+
+        .daily-details {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .daily-details h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .subscription-item {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .subscription-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subscription-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .subscription-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn {
+            background: black;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 12px;
+        }
+
+        .btn:hover {
+            background: #333;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: black;
+            border: 1px solid black;
+        }
+
+        .btn-secondary:hover {
+            background: #f5f5f5;
+        }
+
+        .floating-navbar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            border: 2px solid black;
+            border-radius: 25px;
+            padding: 15px 25px;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 420px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .nav-item:hover {
+            background: #f5f5f5;
+        }
+
+        .nav-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .nav-icon.analytics {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .nav-icon.settings {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .nav-icon.plus {
+            background: black;
+            color: white;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .nav-icon.plus:hover {
+            background: #333;
+            transform: scale(1.1);
+        }
+
+        .nav-icon.plus.active {
+            background: #666;
+            transform: rotate(45deg);
+        }
+
+        .nav-label {
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        .nav-menu {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            border: 2px solid black;
+            border-radius: 8px;
+            padding: 20px;
+            min-width: 300px;
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .nav-menu.show {
+            display: flex;
+        }
+
+        .menu-section {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .menu-section:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .menu-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 14px;
+        }
+
+        .menu-item:hover {
+            background: #f5f5f5;
+        }
+
+        .menu-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .nav-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 8px;
+            border: 1px solid black;
+            border-radius: 4px;
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            width: 120px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #333;
+        }
+
+        .color-picker {
+            width: 30px;
+            height: 30px;
+            border: 1px solid black;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .analytics-panel {
+            display: none;
+            background: white;
+            border: 2px solid black;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 50px auto;
+            max-width: 900px;
+            transition: opacity 0.3s ease;
+        }
+
+        .analytics-panel.show {
+            display: block;
+        }
+
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .analytics-item {
+            text-align: center;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+
+        .analytics-item h4 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .analytics-item p {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .chart-container {
+            background: white;
+            border: 2px solid black;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .bar-chart-container {
+            background: white;
+            border: 2px solid black;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            height: 300px;
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 2px;
+        }
+
+        .bar-chart-bar {
+            background: black;
+            min-height: 10px;
+            flex: 1;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .bar-chart-bar:hover {
+            opacity: 0.7;
+        }
+
+        /* Line Chart Styles */
+        .line-chart-container {
+            background: white;
+            border: 2px solid black;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            height: 300px;
+            position: relative;
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 2px;
+        }
+
+        .line-chart-point {
+            background: black;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            position: absolute;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .line-chart-point:hover {
+            background: #666;
+            transform: scale(1.5);
+        }
+
+        .line-chart-line {
+            position: absolute;
+            height: 2px;
+            background: black;
+            transform-origin: left center;
+        }
+
+        /* Subscription Breakdown Styles */
+        .subscription-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .breakdown-item {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            min-width: 280px;
+            width: 100%;
+        }
+
+        .breakdown-item h4 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .breakdown-item p {
+            font-size: 14px;
+            color: #666;
+            margin: 5px 0;
+        }
+
+        .breakdown-item .price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #000000;
+        }
+
+        /* Breakdown Grid Layout */
+        .subscription-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            justify-items: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .subscription-details-container {
+                max-width: 100%;
+                margin: 0;
+            }
+            
+            .insights-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+            }
+            
+            .insight-item:nth-child(n) {
+                grid-column: 1;
+                grid-row: auto;
+            }
+            
+            .subscription-breakdown {
+                grid-template-columns: 1fr;
+                max-width: 100%;
+            }
+            
+            .breakdown-item {
+                min-width: auto;
+            }
+        }
+
+        /* Subscription Details Container */
+        .subscription-details-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Insights Grid Styles */
+        .insights-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .insight-item:nth-child(1) {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        .insight-item:nth-child(2) {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        .insight-item:nth-child(3) {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .insight-item:nth-child(4) {
+            grid-column: 2;
+            grid-row: 2;
+        }
+
+        .insight-item:nth-child(5) {
+            grid-column: 1;
+            grid-row: 3;
+        }
+
+        .insight-item:nth-child(6) {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        .insight-item {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .insight-item h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .insight-item p {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .insight-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #000000;
+            margin: 10px 0;
+        }
+
+        .custom-tooltip {
+            position: absolute;
+            background: black;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: pre-line;
+            z-index: 1000;
+            pointer-events: none;
+            max-width: 300px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+
+
+
+
+        .log-panel {
+            display: none;
+            background: white;
+            border: 2px solid black;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 50px auto;
+            max-width: 900px;
+            transition: opacity 0.3s ease;
+        }
+
+        .log-panel.show {
+            display: block;
+        }
+
+        .subscription-card {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .subscription-card:hover {
+            border-color: #333;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .subscription-card.expanded {
+            border-color: #333;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .subscription-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .subscription-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .subscription-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid #ddd;
+        }
+
+        .subscription-details h4 {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 18px;
+        }
+
+        .subscription-details p {
+            font-size: 14px;
+            color: #666;
+            margin: 2px 0;
+        }
+
+        .subscription-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .subscription-details-expanded {
+            display: none;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .subscription-details-expanded.show {
+            display: block;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .detail-item {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+        }
+
+        .detail-item h5 {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .detail-item p {
+            font-size: 14px;
+            color: #666;
+            margin: 4px 0;
+        }
+
+        .projection-chart {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        .projection-chart h5 {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .monthly-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .month-item {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        .month-item h6 {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        .month-item p {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .total-projection {
+            background: #333;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .total-projection h4 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .total-projection p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .test-button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .test-button:hover {
+            background: #1565c0;
+        }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            body {
+                font-size: 10px;
+                padding: 0;
+                margin: 0;
+                height: 100vh;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .calendar-container {
+                flex: 1;
+                max-width: 100vw;
+                width: 100vw;
+                margin: 0;
+                padding: 10px;
+                border-radius: 0;
+                border: none;
+                display: flex;
+                flex-direction: column;
+                height: calc(100vh - 60px);
+            }
+
+            .calendar-header {
+                flex-direction: column;
+                gap: 6px;
+                margin-bottom: 10px;
+                padding: 0 5px;
+                flex-shrink: 0;
+            }
+
+            .calendar-nav {
+                gap: 4px;
+            }
+
+            .calendar-nav button {
+                padding: 3px 6px;
+                font-size: 8px;
+            }
+
+            .calendar-title {
+                font-size: 14px;
+                text-align: center;
+                margin: 0;
+            }
+
+            .calendar-grid {
+                gap: 1px;
+                width: 100%;
+                margin: 0 auto;
+                flex: 1;
+                display: grid;
+                grid-template-columns: repeat(7, 1fr);
+                grid-template-rows: repeat(6, 1fr);
+                height: 100%;
+            }
+
+            .calendar-day {
+                height: 100%;
+                width: 100%;
+                padding: 0;
+                font-size: 10px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                min-height: 0;
+            }
+
+            .day-number {
+                font-size: 10px;
+                margin: 0;
+                line-height: 1;
+            }
+
+            .floating-navbar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                transform: none;
+                padding: 6px 10px;
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+                border-bottom: none;
+                z-index: 1001;
+                height: 60px;
+                flex-shrink: 0;
+            }
+
+            .nav-container {
+                width: 100%;
+                justify-content: space-around;
+                display: flex;
+                align-items: center;
+                height: 100%;
+            }
+
+            .nav-item {
+                padding: 2px;
+                min-width: 40px;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .nav-icon {
+                width: 20px;
+                height: 20px;
+            }
+
+            .nav-icon.plus {
+                width: 26px;
+                height: 26px;
+                font-size: 11px;
+            }
+
+            .nav-label {
+                font-size: 8px;
+                margin-top: 1px;
+            }
+
+            .nav-menu {
+                width: 95vw;
+                max-width: 300px;
+                left: 50%;
+                transform: translateX(-50%);
+                bottom: 70px;
+                top: auto;
+                padding: 10px;
+            }
+
+            .menu-section {
+                padding: 6px;
+            }
+
+            .menu-title {
+                font-size: 10px;
+                margin-bottom: 6px;
+            }
+
+            .form-group {
+                margin-bottom: 4px;
+            }
+
+            .form-group label {
+                font-size: 7px;
+                margin-bottom: 2px;
+            }
+
+            .form-group input,
+            .form-group select {
+                padding: 3px;
+                font-size: 9px;
+            }
+
+            .btn {
+                padding: 3px 6px;
+                font-size: 7px;
+            }
+
+            .daily-details {
+                margin-top: 6px;
+                padding: 6px;
+                max-height: 120px;
+                overflow-y: auto;
+            }
+
+            .daily-details h4 {
+                font-size: 10px;
+                margin-bottom: 4px;
+            }
+
+            .subscription-item {
+                padding: 4px;
+                margin-bottom: 3px;
+            }
+
+            .subscription-name {
+                font-size: 8px;
+            }
+
+            .subscription-price {
+                font-size: 6px;
+            }
+
+            .analytics-panel,
+            .log-panel,
+            .settings-panel {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 60px;
+                margin: 0;
+                padding: 10px;
+                max-width: 100%;
+                overflow-y: auto;
+                z-index: 1000;
+            }
+
+            .analytics-grid {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+
+            .analytics-item {
+                padding: 6px;
+            }
+
+            .bar-chart-container {
+                height: 200px;
+                padding: 10px;
+                margin: 10px 0;
+            }
+
+            .analytics-value {
+                font-size: 14px;
+            }
+
+            .analytics-label {
+                font-size: 7px;
+            }
+
+            .subscription-card {
+                padding: 6px;
+                margin-bottom: 6px;
+            }
+
+            .subscription-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+
+            .subscription-info h4 {
+                font-size: 10px;
+            }
+
+            .subscription-info p {
+                font-size: 6px;
+            }
+
+            .subscription-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .subscription-details-expanded {
+                margin-top: 6px;
+                padding: 6px;
+            }
+
+            .details-grid {
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
+
+            .detail-item {
+                padding: 3px;
+            }
+
+            .detail-label {
+                font-size: 6px;
+            }
+
+            .detail-value {
+                font-size: 7px;
+            }
+
+            .projection-chart {
+                margin-top: 6px;
+                padding: 6px;
+            }
+
+            .monthly-breakdown {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 3px;
+            }
+
+            .month-item {
+                padding: 3px;
+            }
+
+            .month-name {
+                font-size: 5px;
+            }
+
+            .month-amount {
+                font-size: 6px;
+            }
+
+            .total-projection {
+                margin-top: 6px;
+                padding: 6px;
+            }
+
+            .total-projection h4 {
+                font-size: 10px;
+            }
+
+            .total-projection p {
+                font-size: 6px;
+            }
+
+            .setting-item {
+                padding: 3px 0;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 3px;
+            }
+
+            .setting-control {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .toggle-switch {
+                width: 30px;
+                height: 16px;
+            }
+
+            .toggle-slider {
+                width: 12px;
+                height: 12px;
+            }
+
+            .toggle-switch.active .toggle-slider {
+                transform: translateX(14px);
+            }
+
+            .form-group input[type="email"],
+            .form-group select {
+                width: 100%;
+                padding: 4px;
+                font-size: 8px;
+            }
+
+            .test-button {
+                width: 100%;
+                padding: 6px;
+                font-size: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .calendar-container {
+                padding: 8px;
+            }
+
+            .calendar-day {
+                font-size: 9px;
+            }
+
+            .day-number {
+                font-size: 9px;
+            }
+
+            .calendar-title {
+                font-size: 12px;
+            }
+
+            .nav-container {
+                gap: 1px;
+            }
+
+            .nav-item {
+                min-width: 35px;
+                padding: 1px;
+            }
+
+            .nav-icon {
+                width: 18px;
+                height: 18px;
+            }
+
+            .nav-icon.plus {
+                width: 24px;
+                height: 24px;
+                font-size: 9px;
+            }
+
+            .nav-label {
+                font-size: 7px;
+            }
+
+            .nav-menu {
+                width: 90vw;
+                max-width: 250px;
+                padding: 8px;
+            }
+
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .monthly-breakdown {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .settings-panel {
+            display: none;
+            background: white;
+            border: 2px solid black;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 50px auto;
+            max-width: 900px;
+            transition: opacity 0.3s ease;
+        }
+
+        .settings-panel.show {
+            display: block;
+        }
+
+        .coming-soon-notification {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            animation: slideInDown 0.5s ease-out;
+        }
+
+        .notification-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .notification-icon {
+            font-size: 20px;
+        }
+
+        .notification-text {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+
+        .notification-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        @keyframes slideInDown {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .setting-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: #ccc;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: black;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(26px);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 30px;
+            border: 2px solid black;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close {
+            color: black;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #666;
+        }
+
+        /* Budget Progress Bar Styles */
+        .budget-progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #ddd;
+        }
+
+        .budget-progress-fill {
+            height: 100%;
+            background: #666666;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #121212;
+            color: #ffffff;
+        }
+
+        body.dark-mode .calendar-container {
+            background: #1e1e1e;
+            border-color: #333;
+        }
+
+        body.dark-mode .calendar-day {
+            background: #1e1e1e;
+            color: #ffffff;
+            border-color: #333;
+        }
+
+        body.dark-mode .calendar-day:hover {
+            background: #2a2a2a;
+        }
+
+        body.dark-mode .calendar-day.other-month {
+            background: #2a2a2a;
+            color: #666;
+        }
+
+        body.dark-mode .calendar-day.today {
+            background: #333;
+        }
+
+        body.dark-mode .calendar-day.selected {
+            background: #444;
+        }
+
+        body.dark-mode .calendar-day-header {
+            background: #333;
+            color: #ffffff;
+        }
+
+        body.dark-mode .calendar-grid {
+            background: #333;
+            border-color: #333;
+        }
+
+        body.dark-mode .daily-details {
+            background: #2a2a2a;
+            border-color: #333;
+        }
+
+        body.dark-mode .subscription-item {
+            background: #1e1e1e;
+            border-color: #333;
+        }
+
+        body.dark-mode .floating-navbar {
+            background: #1e1e1e;
+            border-color: #333;
+        }
+
+        body.dark-mode .nav-icon.analytics,
+        body.dark-mode .nav-icon.settings {
+            background: #333;
+            color: #ffffff;
+        }
+
+        body.dark-mode .nav-icon.analytics:hover,
+        body.dark-mode .nav-icon.settings:hover {
+            background: rgba(51, 51, 51, 0.2);
+        }
+
+        body.dark-mode .nav-menu {
+            background: #1e1e1e;
+            border-color: #333;
+        }
+
+        body.dark-mode .menu-item:hover {
+            background: #333;
+        }
+
+        body.dark-mode .analytics-panel,
+        body.dark-mode .log-panel,
+        body.dark-mode .settings-panel {
+            background: #1e1e1e;
+            border-color: #333;
+        }
+
+        body.dark-mode .coming-soon-notification {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            box-shadow: 0 4px 12px rgba(74, 85, 104, 0.3);
+        }
+
+        body.dark-mode .analytics-item {
+            background: #2a2a2a;
+            border-color: #333;
+        }
+
+        body.dark-mode .subscription-card {
+            background: #1e1e1e;
+            border-color: #333;
+        }
+
+        body.dark-mode .subscription-card:hover {
+            border-color: #555;
+        }
+
+        body.dark-mode .detail-item {
+            background: #2a2a2a;
+        }
+
+        body.dark-mode .month-item {
+            background: #1e1e1e;
+            border-color: #333;
+        }
+
+        body.dark-mode .total-projection {
+            background: #333;
+        }
+
+        body.dark-mode .setting-item {
+            border-bottom-color: #333;
+        }
+
+        body.dark-mode .form-group input,
+        body.dark-mode .form-group select {
+            background: #2a2a2a;
+            border-color: #333;
+            color: #ffffff;
+        }
+
+        body.dark-mode .form-group input:focus,
+        body.dark-mode .form-group select:focus {
+            border-color: #555;
+        }
+
+        body.dark-mode .budget-progress-bar {
+            background-color: #333;
+            border-color: #555;
+        }
+
+        body.dark-mode .modal-content {
+            background: #1e1e1e;
+            border-color: #333;
+        }
+
+        body.dark-mode .close {
+            color: #ffffff;
+        }
+
+        body.dark-mode .close:hover {
+            color: #ccc;
+        }
+
+        /* Dark mode bar chart */
+        body.dark-mode .bar-chart-container {
+            background: #1a1a1a;
+            border-color: #333;
+        }
+
+        body.dark-mode .bar-chart-bar {
+            background: #ffffff;
+        }
+
+        body.dark-mode .bar-chart-bar:hover {
+            background: #cccccc;
+        }
+
+        /* Dark mode chart container */
+        body.dark-mode .chart-container {
+            background: #2a2a2a;
+            border-color: #333;
+        }
+
+        body.dark-mode .chart-title {
+            color: #ffffff !important;
+        }
+
+        /* Dark mode line chart */
+        body.dark-mode .line-chart-container {
+            background: #1e1e1e;
+            border-color: #333;
+        }
+
+        body.dark-mode .line-chart-point {
+            background: #ffffff;
+        }
+
+        body.dark-mode .line-chart-point:hover {
+            background: #cccccc;
+        }
+
+        body.dark-mode .line-chart-line {
+            background: #ffffff;
+        }
+
+        /* Dark mode breakdown and insights */
+        body.dark-mode .breakdown-item,
+        body.dark-mode .insight-item {
+            background: #333333;
+            border-color: #444;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        body.dark-mode .breakdown-item:hover,
+        body.dark-mode .insight-item:hover {
+            background: #3a3a3a;
+            transform: translateY(-2px);
+        }
+
+        body.dark-mode .breakdown-item h4,
+        body.dark-mode .insight-item h4 {
+            color: #ffffff;
+        }
+
+        body.dark-mode .breakdown-item p,
+        body.dark-mode .insight-item p {
+            color: #cccccc;
+        }
+
+        body.dark-mode .breakdown-item .price,
+        body.dark-mode .insight-item .insight-value {
+            color: #ffffff !important;
+        }
+
+
+        /* Dark mode title colors */
+        body.dark-mode h3,
+        body.dark-mode h4,
+        body.dark-mode h5,
+        body.dark-mode h6 {
+            color: #ffffff !important;
+        }
+
+        /* Dark mode analytics summary */
+        body.dark-mode .analytics-summary {
+            background: #2a2a2a;
+            border-color: #333;
+        }
+
+        body.dark-mode .analytics-summary h4 {
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .analytics-summary p {
+            color: #cccccc !important;
+        }
+
+        /* Dark mode insights grid */
+        body.dark-mode .insights-grid {
+            background: transparent;
+        }
+
+        /* Dark mode subscription breakdown */
+        body.dark-mode .subscription-breakdown {
+            background: transparent;
+        }
+
+        /* Dark mode custom tooltip */
+        body.dark-mode .custom-tooltip {
+            background: #1a1a1a !important;
+            color: #ffffff !important;
+            border: 1px solid #333 !important;
+        }
+
+        /* Dark mode chart container hover effects */
+        body.dark-mode .chart-container:hover {
+            background: #2f2f2f;
+        }
+
+        /* Dark mode calendar day numbers */
+        body.dark-mode .day-number {
+            color: #ffffff !important;
+        }
+
+        /* Dark mode budget progress bar */
+        body.dark-mode .budget-progress-fill {
+            background: #cccccc;
+        }
+
+        @media (max-width: 768px) {
+            .calendar-container {
+                margin: 20px;
+                padding: 15px;
+            }
+            
+            .calendar-day {
+                min-height: 80px;
+            }
+            
+            .floating-navbar {
+                flex-direction: column;
+                padding: 10px;
+            }
+            
+            .nav-form {
+                justify-content: center;
+            }
+            
+            .form-group input,
+            .form-group select {
+                width: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar-container" id="calendar-container">
+        <div class="calendar-header">
+            <div class="calendar-nav">
+                <button class="btn btn-secondary" id="prevMonth">←</button>
+                <button class="btn btn-secondary" id="nextMonth">→</button>
+            </div>
+            <h2 class="calendar-title" id="calendarTitle"></h2>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="daily-details" id="dailyDetails">
+            <h3 id="dailyDetailsTitle">Select a date to view subscriptions</h3>
+            <div id="dailySubscriptions"></div>
+        </div>
+    </div>
+
+    <div class="floating-navbar">
+        <div class="nav-container">
+            <div class="nav-item" id="calendarNav">
+                <div class="nav-icon analytics">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+                    </svg>
+                </div>
+                <div class="nav-label">Calendar</div>
+            </div>
+            
+            <div class="nav-item" id="analyticsNav">
+                <div class="nav-icon analytics">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 13h2v8H3v-8zm4-6h2v14H7V7zm4-6h2v20h-2V1zm4 4h2v16h-2V5zm4 4h2v12h-2V9z"/>
+                    </svg>
+                </div>
+                <div class="nav-label">Analytics</div>
+            </div>
+            
+            <div class="nav-item" id="plusNav">
+                <div class="nav-icon plus" id="navPlus">+</div>
+                <div class="nav-label">Add</div>
+                <div class="nav-menu" id="navMenu">
+                    <div class="menu-section">
+                        <div class="menu-title">Add Subscription</div>
+                        <form id="subscriptionForm" class="nav-form">
+                            <div class="form-group">
+                                <label for="subscriptionName">Name</label>
+                                <input type="text" id="subscriptionName" placeholder="Netflix" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="subscriptionPrice">Price</label>
+                                <input type="number" id="subscriptionPrice" step="0.01" placeholder="9.99" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="billingCycle">Cycle</label>
+                                <select id="billingCycle" required>
+                                    <option value="monthly">Monthly</option>
+                                    <option value="yearly">Yearly</option>
+                                    <option value="weekly">Weekly</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="startDate">Start Date</label>
+                                <input type="date" id="startDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="subscriptionColor">Color</label>
+                                <input type="color" id="subscriptionColor" class="color-picker" value="#ff0000">
+                            </div>
+                            <button type="submit" class="btn">Add</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="nav-item" id="logNav">
+                <div class="nav-icon analytics">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                    </svg>
+                </div>
+                <div class="nav-label">Log</div>
+            </div>
+            
+            
+            <div class="nav-item" id="settingsNav">
+                <div class="nav-icon settings">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.82,11.69,4.82,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+                    </svg>
+                </div>
+                <div class="nav-label">Settings</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="analytics-panel" id="analyticsPanel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3>Analytics</h3>
+            <button class="btn btn-secondary" onclick="calendar.showCalendar()" style="font-size: 12px; padding: 6px 12px;">← Back to Calendar</button>
+        </div>
+        
+        <!-- Summary Stats -->
+        <div class="analytics-grid">
+            <div class="analytics-item">
+                <h4 id="totalSubscriptions">0</h4>
+                <p>Total Subscriptions</p>
+            </div>
+            <div class="analytics-item">
+                <h4 id="monthlyCost">$0.00</h4>
+                <p>Monthly Cost</p>
+            </div>
+            <div class="analytics-item">
+                <h4 id="yearlyCost">$0.00</h4>
+                <p>Yearly Cost</p>
+            </div>
+            <div class="analytics-item">
+                <h4 id="mostExpensive">$0.00</h4>
+                <p>Most Expensive</p>
+            </div>
+        </div>
+
+        <!-- Monthly Spending Bar Chart -->
+        <div class="chart-container">
+            <h3 class="chart-title">Monthly Spending</h3>
+            <div class="bar-chart-container" id="monthlySpendingChart">
+                <!-- Chart will be dynamically generated here -->
+            </div>
+        </div>
+
+        <!-- Subscription Details -->
+        <div class="chart-container subscription-details-container">
+            <h3 class="chart-title">Subscription Breakdown & Insights</h3>
+            <div class="subscription-breakdown" id="subscriptionBreakdown">
+                <!-- Subscription details will be generated here -->
+            </div>
+        </div>
+    </div>
+
+    <div class="log-panel" id="logPanel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3>All Subscriptions</h3>
+            <button class="btn btn-secondary" onclick="calendar.showCalendar()" style="font-size: 12px; padding: 6px 12px;">← Back to Calendar</button>
+        </div>
+        <div id="subscriptionsList"></div>
+    </div>
+
+
+    <div class="settings-panel" id="settingsPanel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3>Settings</h3>
+            <button class="btn btn-secondary" onclick="calendar.showCalendar()" style="font-size: 12px; padding: 6px 12px;">← Back to Calendar</button>
+        </div>
+        
+        <!-- Coming Soon Notification -->
+        <div class="coming-soon-notification" id="comingSoonNotification">
+            <div class="notification-content">
+                <span class="notification-icon">🚀</span>
+                <span class="notification-text">Free trial tracking, special Chrome extension for automation, and split cost features coming soon!</span>
+            </div>
+            <button class="notification-close" onclick="calendar.closeNotification()">×</button>
+        </div>
+        <div class="setting-item">
+            <span class="setting-label">Dark Mode</span>
+            <div class="setting-control">
+                <div class="toggle-switch" id="darkModeToggle">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Budget Settings -->
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee;">
+            <h4 style="margin-bottom: 20px; color: #333;">💰 Budget Management</h4>
+            
+            <div class="setting-item">
+                <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+                    <span class="setting-label">Monthly Budget</span>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="number" id="monthlyBudget" placeholder="Enter monthly budget" step="0.01" min="0" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <button class="btn" onclick="calendar.saveBudget()" style="padding: 8px 16px;">Save</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="budgetProgressContainer" style="margin-top: 20px; display: none;">
+                <div style="margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <span style="font-weight: 500;">Current Month Spending</span>
+                        <span id="budgetSpending" style="font-weight: 600;">$0.00</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-size: 14px; color: #666;">Budget: <span id="budgetAmount">$0.00</span></span>
+                        <span id="budgetPercentage" style="font-size: 14px; color: #666;">0%</span>
+                    </div>
+                </div>
+                <div class="budget-progress-bar">
+                    <div class="budget-progress-fill" id="budgetProgressFill"></div>
+                </div>
+                <div id="budgetStatus" style="margin-top: 10px; font-size: 14px; font-weight: 500;"></div>
+            </div>
+        </div>
+        
+        
+        <!-- Telegram Notification Settings -->
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee;">
+            <h4 style="margin-bottom: 20px; color: #333;">📱 Telegram Notifications</h4>
+            
+            <div class="setting-item">
+                <span class="setting-label">Enable Telegram Notifications</span>
+                <div class="setting-control">
+                    <div class="toggle-switch" id="enableTelegram">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="telegramSettings" style="display: none;">
+                <div style="margin: 20px 0;">
+                    <button class="test-button" onclick="calendar.testTelegramNotification()" style="width: 100%; margin-bottom: 10px;">Send Test Telegram Message</button>
+                    <div id="telegramTestResult" style="font-size: 14px; text-align: center;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Email Notification Settings -->
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee;">
+            <h4 style="margin-bottom: 20px; color: #333;">📧 Email Notifications</h4>
+            
+            <div class="setting-item">
+                <span class="setting-label">Enable Email Notifications</span>
+                <div class="setting-control">
+                    <div class="toggle-switch" id="enableNotifications">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="emailSettings" style="display: none;">
+                <div class="form-group" style="margin: 15px 0;">
+                    <label for="emailAddress" style="display: block; margin-bottom: 5px; font-weight: 500;">Email Address</label>
+                    <input type="email" id="emailAddress" placeholder="your.email@gmail.com" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                
+                <div class="form-group" style="margin: 15px 0;">
+                    <label for="notificationDays" style="display: block; margin-bottom: 5px; font-weight: 500;">Days Before Billing</label>
+                    <select id="notificationDays" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="1">1 day before</option>
+                        <option value="3">3 days before</option>
+                        <option value="7" selected>7 days before</option>
+                        <option value="14">14 days before</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" style="margin: 15px 0;">
+                    <label for="notificationTime" style="display: block; margin-bottom: 5px; font-weight: 500;">Notification Time</label>
+                    <select id="notificationTime" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="09:00">9:00 AM</option>
+                        <option value="12:00" selected>12:00 PM</option>
+                        <option value="18:00">6:00 PM</option>
+                        <option value="20:00">8:00 PM</option>
+                    </select>
+                </div>
+                
+                <div style="margin: 20px 0;">
+                    <button class="test-button" onclick="calendar.testEmailNotification()" style="width: 100%; margin-bottom: 10px;">Send Test Email</button>
+                    <div id="testResult" style="font-size: 14px; text-align: center;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+
+        class SubscriptionCalendar {
+            constructor() {
+                this.subscriptions = [];
+                this.currentDate = new Date();
+                this.currentMonth = this.currentDate.getMonth();
+                this.currentYear = this.currentDate.getFullYear();
+                this.selectedDate = null;
+                this.isLoading = false;
+                
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.loadSubscriptions();
+                this.loadDarkMode();
+                this.renderCalendar();
+                this.updateAnalytics();
+                this.updateBudgetProgress();
+                this.checkUpcomingBilling();
+            }
+
+            setupEventListeners() {
+                // Plus button toggle
+                document.getElementById('navPlus').addEventListener('click', () => {
+                    this.toggleMenu();
+                });
+
+                // Close menu when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.nav-item')) {
+                        this.closeMenu();
+                    }
+                });
+
+                // Subscription form
+                document.getElementById('subscriptionForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.addSubscription();
+                });
+
+                // Calendar button
+                document.getElementById('calendarNav').addEventListener('click', () => {
+                    this.showCalendar();
+                    this.closeMenu();
+                });
+
+                // Log button
+                document.getElementById('logNav').addEventListener('click', () => {
+                    this.showLog();
+                    this.closeMenu();
+                });
+
+                // Analytics button
+                document.getElementById('analyticsNav').addEventListener('click', () => {
+                    this.showAnalytics();
+                    this.closeMenu();
+                });
+
+
+                // Settings button
+                document.getElementById('settingsNav').addEventListener('click', () => {
+                    this.showSettings();
+                    this.closeMenu();
+                });
+
+                // Calendar navigation
+                document.getElementById('prevMonth').addEventListener('click', () => {
+                    this.currentMonth--;
+                    if (this.currentMonth < 0) {
+                        this.currentMonth = 11;
+                        this.currentYear--;
+                    }
+                    this.renderCalendar();
+                });
+
+                document.getElementById('nextMonth').addEventListener('click', () => {
+                    this.currentMonth++;
+                    if (this.currentMonth > 11) {
+                        this.currentMonth = 0;
+                        this.currentYear++;
+                    }
+                    this.renderCalendar();
+                });
+
+                // Settings toggles
+                this.setupSettingsToggles();
+            }
+
+            toggleMenu() {
+                const menu = document.getElementById('navMenu');
+                const plus = document.getElementById('navPlus');
+                
+                if (menu.classList.contains('show')) {
+                    this.closeMenu();
+                } else {
+                    menu.classList.add('show');
+                    plus.classList.add('active');
+                }
+            }
+
+            closeMenu() {
+                const menu = document.getElementById('navMenu');
+                const plus = document.getElementById('navPlus');
+                
+                menu.classList.remove('show');
+                plus.classList.remove('active');
+            }
+
+            showLog() {
+                this.hideAllPanels();
+                document.getElementById('calendar-container').classList.add('hidden');
+                document.getElementById('logPanel').classList.add('show');
+                this.renderSubscriptionsList();
+            }
+
+            showAnalytics() {
+                this.hideAllPanels();
+                document.getElementById('calendar-container').classList.add('hidden');
+                document.getElementById('analyticsPanel').classList.add('show');
+                this.updateAnalytics();
+            }
+
+
+            showSettings() {
+                this.hideAllPanels();
+                document.getElementById('calendar-container').classList.add('hidden');
+                document.getElementById('settingsPanel').classList.add('show');
+                this.loadNotificationSettings();
+                this.loadBudgetSettings();
+            }
+
+            showCalendar() {
+                this.hideAllPanels();
+                document.getElementById('calendar-container').classList.remove('hidden');
+            }
+
+            hideAllPanels() {
+                document.getElementById('logPanel').classList.remove('show');
+                document.getElementById('analyticsPanel').classList.remove('show');
+                document.getElementById('settingsPanel').classList.remove('show');
+                document.getElementById('calendar-container').classList.remove('hidden');
+            }
+
+            setupSettingsToggles() {
+                // Dark mode toggle
+                document.getElementById('darkModeToggle').addEventListener('click', () => {
+                    this.toggleSetting('darkModeToggle');
+                });
+
+
+                // Email notifications toggle
+                document.getElementById('enableNotifications').addEventListener('click', () => {
+                    this.toggleSetting('enableNotifications');
+                });
+
+                // Telegram notifications toggle
+                document.getElementById('enableTelegram').addEventListener('click', () => {
+                    this.toggleSetting('enableTelegram');
+                });
+            }
+
+            toggleSetting(toggleId) {
+                const toggle = document.getElementById(toggleId);
+                toggle.classList.toggle('active');
+                
+                // Handle email settings visibility
+                if (toggleId === 'enableNotifications') {
+                    const emailSettings = document.getElementById('emailSettings');
+                    if (toggle.classList.contains('active')) {
+                        emailSettings.style.display = 'block';
+                    } else {
+                        emailSettings.style.display = 'none';
+                    }
+                }
+                
+                // Handle telegram settings visibility
+                if (toggleId === 'enableTelegram') {
+                    const telegramSettings = document.getElementById('telegramSettings');
+                    if (toggle.classList.contains('active')) {
+                        telegramSettings.style.display = 'block';
+                    } else {
+                        telegramSettings.style.display = 'none';
+                    }
+                }
+                
+                // Handle dark mode toggle
+                if (toggleId === 'darkModeToggle') {
+                    this.toggleDarkMode();
+                }
+                
+                // Save setting to localStorage
+                const settingName = toggleId.replace('Toggle', '');
+                localStorage.setItem(settingName, toggle.classList.contains('active'));
+            }
+
+            toggleDarkMode() {
+                const body = document.body;
+                const isDarkMode = body.classList.contains('dark-mode');
+                
+                if (isDarkMode) {
+                    body.classList.remove('dark-mode');
+                } else {
+                    body.classList.add('dark-mode');
+                }
+                
+                // Save dark mode preference
+                localStorage.setItem('darkMode', !isDarkMode);
+                
+                // Update budget progress bar colors
+                this.updateBudgetProgress();
+            }
+
+            loadDarkMode() {
+                const isDarkMode = localStorage.getItem('darkMode') === 'true';
+                const darkModeToggle = document.getElementById('darkModeToggle');
+                
+                if (isDarkMode) {
+                    document.body.classList.add('dark-mode');
+                    darkModeToggle.classList.add('active');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    darkModeToggle.classList.remove('active');
+                }
+            }
+
+
+            addSubscription() {
+                const name = document.getElementById('subscriptionName').value;
+                const price = parseFloat(document.getElementById('subscriptionPrice').value);
+                const billingCycle = document.getElementById('billingCycle').value;
+                const startDate = new Date(document.getElementById('startDate').value);
+                const color = document.getElementById('subscriptionColor').value;
+
+                const subscription = {
+                    id: Date.now(),
+                    name,
+                    price,
+                    billingCycle,
+                    startDate: startDate.toISOString(),
+                    color,
+                    nextBillingDate: this.calculateNextBillingDate(startDate, billingCycle)
+                };
+
+                this.subscriptions.push(subscription);
+                this.saveSubscriptions();
+                this.renderCalendar();
+                this.updateAnalytics();
+                this.updateBudgetProgress();
+                this.resetForm();
+                this.closeMenu();
+            }
+
+            calculateNextBillingDate(startDate, billingCycle) {
+                const nextDate = new Date(startDate);
+                switch (billingCycle) {
+                    case 'weekly':
+                        nextDate.setDate(nextDate.getDate() + 7);
+                        break;
+                    case 'monthly':
+                        nextDate.setMonth(nextDate.getMonth() + 1);
+                        break;
+                    case 'yearly':
+                        nextDate.setFullYear(nextDate.getFullYear() + 1);
+                        break;
+                }
+                return nextDate.toISOString();
+            }
+
+            resetForm() {
+                document.getElementById('subscriptionForm').reset();
+                document.getElementById('startDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('subscriptionColor').value = this.getRandomColor();
+            }
+
+            getRandomColor() {
+                const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ff8800', '#8800ff', '#00ff88', '#ff0088'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            renderCalendar() {
+                const calendarTitle = document.getElementById('calendarTitle');
+                const calendarGrid = document.getElementById('calendarGrid');
+                
+                const monthNames = [
+                    'January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                ];
+
+                calendarTitle.textContent = `${monthNames[this.currentMonth]} ${this.currentYear}`;
+
+                // Clear calendar
+                calendarGrid.innerHTML = '';
+
+                // Add day headers
+                const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                dayHeaders.forEach(day => {
+                    const dayHeader = document.createElement('div');
+                    dayHeader.className = 'calendar-day-header';
+                    dayHeader.textContent = day;
+                    calendarGrid.appendChild(dayHeader);
+                });
+
+                // Get first day of month and number of days
+                const firstDay = new Date(this.currentYear, this.currentMonth, 1);
+                const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0);
+                const daysInMonth = lastDay.getDate();
+                const startingDayOfWeek = firstDay.getDay();
+
+                // Add empty cells for days before month starts
+                for (let i = 0; i < startingDayOfWeek; i++) {
+                    const emptyDay = document.createElement('div');
+                    emptyDay.className = 'calendar-day other-month';
+                    calendarGrid.appendChild(emptyDay);
+                }
+
+                // Add days of the month
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayElement = document.createElement('div');
+                    dayElement.className = 'calendar-day';
+                    
+                    const dayNumber = document.createElement('div');
+                    dayNumber.className = 'day-number';
+                    dayNumber.textContent = day;
+                    dayElement.appendChild(dayNumber);
+
+                    // Check if this is today
+                    const today = new Date();
+                    if (day === today.getDate() && 
+                        this.currentMonth === today.getMonth() && 
+                        this.currentYear === today.getFullYear()) {
+                        dayElement.classList.add('today');
+                    }
+
+                    // Add click event to show daily details
+                    dayElement.addEventListener('click', () => {
+                        this.selectDate(day, dayElement);
+                    });
+
+                    // Add subscriptions for this day
+                    this.addSubscriptionsToDay(dayElement, day);
+
+                    calendarGrid.appendChild(dayElement);
+                }
+
+                // Add empty cells for days after month ends
+                const totalCells = calendarGrid.children.length - 7; // Subtract day headers
+                const remainingCells = 42 - totalCells; // 6 rows * 7 days
+                for (let i = 0; i < remainingCells; i++) {
+                    const emptyDay = document.createElement('div');
+                    emptyDay.className = 'calendar-day other-month';
+                    calendarGrid.appendChild(emptyDay);
+                }
+            }
+
+            selectDate(day, dayElement) {
+                // Remove previous selection
+                document.querySelectorAll('.calendar-day.selected').forEach(el => {
+                    el.classList.remove('selected');
+                });
+
+                // Add selection to current day
+                dayElement.classList.add('selected');
+                this.selectedDate = new Date(this.currentYear, this.currentMonth, day);
+                this.showDailyDetails(day);
+            }
+
+            showDailyDetails(day) {
+                const dailyDetails = document.getElementById('dailyDetails');
+                const dailyDetailsTitle = document.getElementById('dailyDetailsTitle');
+                const dailySubscriptions = document.getElementById('dailySubscriptions');
+
+                const selectedDate = new Date(this.currentYear, this.currentMonth, day);
+                const daySubscriptions = this.getSubscriptionsForDate(selectedDate);
+
+                dailyDetailsTitle.textContent = `Subscriptions for ${selectedDate.toLocaleDateString()}`;
+                dailySubscriptions.innerHTML = '';
+
+                if (daySubscriptions.length === 0) {
+                    dailySubscriptions.innerHTML = '<p>No subscriptions for this date.</p>';
+                } else {
+                    daySubscriptions.forEach(subscription => {
+                        const subscriptionItem = document.createElement('div');
+                        subscriptionItem.className = 'subscription-item';
+                        subscriptionItem.innerHTML = `
+                            <div class="subscription-info">
+                                <div class="subscription-color" style="background-color: ${subscription.color}"></div>
+                                <div>
+                                    <strong>${subscription.name}</strong><br>
+                                    <small>$${subscription.price} (${subscription.billingCycle})</small>
+                                </div>
+                            </div>
+                            <div class="subscription-actions">
+                                <button class="btn btn-secondary" onclick="calendar.deleteSubscription(${subscription.id})">Delete</button>
+                            </div>
+                        `;
+                        dailySubscriptions.appendChild(subscriptionItem);
+                    });
+                }
+
+                dailyDetails.style.display = 'block';
+            }
+
+            getSubscriptionsForDate(date) {
+                return this.subscriptions.filter(subscription => {
+                    // Check if this date matches any recurring billing date
+                    const startDate = new Date(subscription.startDate);
+                    const billingCycle = subscription.billingCycle;
+                    
+                    // Calculate all possible billing dates from start date to current month
+                    let currentBillingDate = new Date(startDate);
+                    
+                    // For weekly subscriptions, check every 7 days
+                    if (billingCycle === 'weekly') {
+                        while (currentBillingDate <= new Date(this.currentYear, this.currentMonth + 1, 0)) {
+                            if (this.isSameDate(date, currentBillingDate)) {
+                                return true;
+                            }
+                            currentBillingDate.setDate(currentBillingDate.getDate() + 7);
+                        }
+                    }
+                    // For monthly subscriptions, check same day of each month
+                    else if (billingCycle === 'monthly') {
+                        while (currentBillingDate <= new Date(this.currentYear, this.currentMonth + 1, 0)) {
+                            if (this.isSameDate(date, currentBillingDate)) {
+                                return true;
+                            }
+                            currentBillingDate.setMonth(currentBillingDate.getMonth() + 1);
+                        }
+                    }
+                    // For yearly subscriptions, check same day of each year
+                    else if (billingCycle === 'yearly') {
+                        while (currentBillingDate <= new Date(this.currentYear, this.currentMonth + 1, 0)) {
+                            if (this.isSameDate(date, currentBillingDate)) {
+                                return true;
+                            }
+                            currentBillingDate.setFullYear(currentBillingDate.getFullYear() + 1);
+                        }
+                    }
+                    
+                    return false;
+                });
+            }
+
+            addSubscriptionsToDay(dayElement, day) {
+                const currentDate = new Date(this.currentYear, this.currentMonth, day);
+                const daySubscriptions = this.getSubscriptionsForDate(currentDate);
+                
+                if (daySubscriptions.length > 0) {
+                    dayElement.classList.add('has-subscription');
+                    
+                    // If multiple subscriptions, add animation class
+                    if (daySubscriptions.length > 1) {
+                        dayElement.classList.add('has-multiple-subscriptions');
+                    }
+                    
+                    // Set background color based on subscription
+                    if (daySubscriptions.length === 1) {
+                        const subscription = daySubscriptions[0];
+                        dayElement.style.setProperty('--subscription-color', subscription.color);
+                        dayElement.title = `${subscription.name} - $${subscription.price} (${subscription.billingCycle})`;
+                    } else {
+                        // Multiple subscriptions - set up color cycling
+                        daySubscriptions.forEach((subscription, index) => {
+                            dayElement.style.setProperty(`--subscription-color-${index + 1}`, subscription.color);
+                        });
+                        
+                        // Fill remaining color slots with the last color for smooth cycling
+                        for (let i = daySubscriptions.length; i < 4; i++) {
+                            const lastColor = daySubscriptions[daySubscriptions.length - 1].color;
+                            dayElement.style.setProperty(`--subscription-color-${i + 1}`, lastColor);
+                        }
+                        
+                        // Create tooltip with all subscriptions
+                        const tooltipText = daySubscriptions.map(sub => 
+                            `${sub.name} - $${sub.price} (${sub.billingCycle})`
+                        ).join('\n');
+                        dayElement.title = tooltipText;
+                    }
+                }
+            }
+
+            isSameDate(date1, date2) {
+                return date1.getDate() === date2.getDate() &&
+                       date1.getMonth() === date2.getMonth() &&
+                       date1.getFullYear() === date2.getFullYear();
+            }
+
+            deleteSubscription(id) {
+                this.subscriptions = this.subscriptions.filter(sub => sub.id !== id);
+                this.saveSubscriptions();
+                this.renderCalendar();
+                this.updateAnalytics();
+                this.updateBudgetProgress();
+                
+                // Refresh the log panel if it's currently visible
+                if (document.getElementById('logPanel').classList.contains('show')) {
+                    this.renderSubscriptionsList();
+                }
+                
+                // Refresh daily details if a date is selected
+                if (this.selectedDate) {
+                    this.showDailyDetails(this.selectedDate.getDate());
+                }
+            }
+
+            updateNextBilling(id) {
+                const subscription = this.subscriptions.find(sub => sub.id === id);
+                if (subscription) {
+                    subscription.nextBillingDate = this.calculateNextBillingDate(
+                        new Date(subscription.nextBillingDate), 
+                        subscription.billingCycle
+                    ).toISOString();
+                    this.saveSubscriptions();
+                    this.renderCalendar();
+                    if (this.selectedDate) {
+                        this.showDailyDetails(this.selectedDate.getDate());
+                    }
+                }
+            }
+
+            updateAnalytics() {
+                const totalSubscriptions = this.subscriptions.length;
+                document.getElementById('totalSubscriptions').textContent = totalSubscriptions;
+
+                let monthlyCost = 0;
+                let yearlyCost = 0;
+                let mostExpensive = 0;
+                let mostExpensiveSubscription = null;
+                let weeklyCost = 0;
+
+                this.subscriptions.forEach(subscription => {
+                    const price = subscription.price;
+                    switch (subscription.billingCycle) {
+                        case 'weekly':
+                            monthlyCost += price * 4.33; // Approximate weeks per month
+                            yearlyCost += price * 52;
+                            weeklyCost += price;
+                            break;
+                        case 'monthly':
+                            monthlyCost += price;
+                            yearlyCost += price * 12;
+                            break;
+                        case 'yearly':
+                            monthlyCost += price / 12;
+                            yearlyCost += price;
+                            break;
+                    }
+                    if (price > mostExpensive) {
+                        mostExpensive = price;
+                        mostExpensiveSubscription = subscription;
+                    }
+                });
+
+                document.getElementById('monthlyCost').textContent = `$${monthlyCost.toFixed(2)}`;
+                document.getElementById('yearlyCost').textContent = `$${yearlyCost.toFixed(2)}`;
+                document.getElementById('mostExpensive').textContent = mostExpensiveSubscription ? 
+                    mostExpensiveSubscription.name : 'None';
+
+                // Update the monthly spending chart
+                this.renderMonthlySpendingChart();
+                
+                // Update subscription breakdown with insights
+                this.renderSubscriptionBreakdown();
+            }
+
+
+            calculateAverageMonthly() {
+                if (this.subscriptions.length === 0) return '$0.00';
+                let total = 0;
+                this.subscriptions.forEach(subscription => {
+                    const price = subscription.price;
+                    switch (subscription.billingCycle) {
+                        case 'weekly':
+                            total += price * 4.33;
+                            break;
+                        case 'monthly':
+                            total += price;
+                            break;
+                        case 'yearly':
+                            total += price / 12;
+                            break;
+                    }
+                });
+                return `$${(total / this.subscriptions.length).toFixed(2)}`;
+            }
+
+            getMostCommonCycle() {
+                const cycles = { weekly: 0, monthly: 0, yearly: 0 };
+                this.subscriptions.forEach(subscription => {
+                    cycles[subscription.billingCycle]++;
+                });
+                const max = Math.max(...Object.values(cycles));
+                const mostCommon = Object.keys(cycles).find(key => cycles[key] === max);
+                return mostCommon ? mostCommon.charAt(0).toUpperCase() + mostCommon.slice(1) : 'None';
+            }
+
+            calculateSavingsPotential() {
+                // Simple calculation: if user has yearly subscriptions, show potential monthly savings
+                let yearlySavings = 0;
+                this.subscriptions.forEach(subscription => {
+                    if (subscription.billingCycle === 'yearly') {
+                        yearlySavings += subscription.price * 0.1; // 10% savings assumption
+                    }
+                });
+                return `$${yearlySavings.toFixed(2)}`;
+            }
+
+            calculateMonthlySpending() {
+                const monthlyData = [];
+                const currentDate = new Date();
+                
+                // Calculate spending for the last 12 months
+                for (let i = 11; i >= 0; i--) {
+                    const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+                    const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+                    
+                    let monthlySpending = 0;
+                    const monthSubscriptions = [];
+                    
+                    this.subscriptions.forEach(subscription => {
+                        const startDate = new Date(subscription.startDate);
+                        const billingCycle = subscription.billingCycle;
+                        let subscriptionCost = 0;
+                        
+                        if (billingCycle === 'monthly') {
+                            // Check if this subscription bills in this month
+                            if (startDate.getDate() <= monthEnd.getDate() && 
+                                startDate.getMonth() === monthDate.getMonth() && 
+                                startDate.getFullYear() <= monthDate.getFullYear()) {
+                                subscriptionCost = subscription.price;
+                                monthlySpending += subscription.price;
+                            }
+                        } else if (billingCycle === 'yearly') {
+                            // Check if this subscription bills in this month
+                            if (startDate.getMonth() === monthDate.getMonth() && 
+                                startDate.getFullYear() <= monthDate.getFullYear()) {
+                                subscriptionCost = subscription.price;
+                                monthlySpending += subscription.price;
+                            }
+                        } else if (billingCycle === 'weekly') {
+                            // Calculate weekly costs for this month
+                            let weekDate = new Date(startDate);
+                            while (weekDate <= monthEnd) {
+                                if (weekDate >= monthDate) {
+                                    subscriptionCost += subscription.price;
+                                    monthlySpending += subscription.price;
+                                }
+                                weekDate.setDate(weekDate.getDate() + 7);
+                            }
+                        }
+                        
+                        if (subscriptionCost > 0) {
+                            monthSubscriptions.push({
+                                name: subscription.name,
+                                cost: subscriptionCost,
+                                billingCycle: subscription.billingCycle
+                            });
+                        }
+                    });
+                    
+                    monthlyData.push({
+                        month: monthDate.getMonth(),
+                        year: monthDate.getFullYear(),
+                        spending: monthlySpending,
+                        subscriptions: monthSubscriptions
+                    });
+                }
+                
+                return monthlyData;
+            }
+
+            renderMonthlySpendingChart() {
+                const chartContainer = document.getElementById('monthlySpendingChart');
+                const monthlyData = this.calculateMonthlySpending();
+                
+                // Clear existing chart
+                chartContainer.innerHTML = '';
+                
+                if (monthlyData.length === 0) {
+                    chartContainer.innerHTML = '<p style="text-align: center; color: #666; padding: 50px;">No data available</p>';
+                    return;
+                }
+                
+                this.renderBarChart(chartContainer, monthlyData);
+            }
+
+            renderBarChart(container, monthlyData) {
+                // Get or create custom tooltip element
+                let tooltip = document.querySelector('.custom-tooltip');
+                if (!tooltip) {
+                    tooltip = document.createElement('div');
+                    tooltip.className = 'custom-tooltip';
+                    tooltip.style.display = 'none';
+                    document.body.appendChild(tooltip);
+                }
+                
+                // Find the maximum spending to scale the bars
+                const maxSpending = Math.max(...monthlyData.map(data => data.spending), 1);
+                
+                monthlyData.forEach((data, index) => {
+                    const bar = document.createElement('div');
+                    bar.className = 'bar-chart-bar';
+                    
+                    // Calculate bar height as percentage of max spending
+                    const heightPercentage = (data.spending / maxSpending) * 100;
+                    bar.style.height = `${heightPercentage}%`;
+                    
+                    // Create detailed tooltip text
+                    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                                     'July', 'August', 'September', 'October', 'November', 'December'];
+                    
+                    let tooltipText = `${monthNames[data.month]} ${data.year}\n`;
+                    tooltipText += `Total: $${data.spending.toFixed(2)}\n\n`;
+                    
+                    if (data.subscriptions.length > 0) {
+                        tooltipText += 'Subscriptions:\n';
+                        data.subscriptions.forEach(sub => {
+                            tooltipText += `• ${sub.name}: $${sub.cost.toFixed(2)} (${sub.billingCycle})\n`;
+                        });
+                    } else {
+                        tooltipText += 'No subscriptions this month';
+                    }
+                    
+                    // Add hover events
+                    bar.addEventListener('mouseenter', (e) => {
+                        tooltip.textContent = tooltipText;
+                        tooltip.style.display = 'block';
+                        this.updateTooltipPosition(e, tooltip);
+                    });
+                    
+                    bar.addEventListener('mousemove', (e) => {
+                        this.updateTooltipPosition(e, tooltip);
+                    });
+                    
+                    bar.addEventListener('mouseleave', () => {
+                        tooltip.style.display = 'none';
+                    });
+                    
+                    container.appendChild(bar);
+                });
+            }
+
+
+            updateTooltipPosition(e, tooltip) {
+                const x = e.clientX + 10;
+                const y = e.clientY - 10;
+                tooltip.style.left = x + 'px';
+                tooltip.style.top = y + 'px';
+            }
+
+            renderMonthlySpendingLineChart() {
+                const chartContainer = document.getElementById('monthlySpendingLineChart');
+                const monthlyData = this.calculateMonthlySpending();
+                
+                // Clear existing chart
+                chartContainer.innerHTML = '';
+                
+                if (monthlyData.length === 0) {
+                    chartContainer.innerHTML = '<p style="text-align: center; color: #666; padding: 50px;">No data available</p>';
+                    return;
+                }
+                
+                // Find max spending for scaling
+                const maxSpending = Math.max(...monthlyData.map(data => data.spending), 1);
+                const containerHeight = 260; // 300px - 40px padding
+                const containerWidth = chartContainer.offsetWidth - 40; // Account for padding
+                
+                // Create SVG for line chart
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('width', '100%');
+                svg.setAttribute('height', '100%');
+                svg.style.position = 'absolute';
+                svg.style.top = '0';
+                svg.style.left = '0';
+                
+                // Create line path
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                let pathData = '';
+                
+                monthlyData.forEach((data, index) => {
+                    const x = (index / (monthlyData.length - 1)) * containerWidth;
+                    const y = containerHeight - (data.spending / maxSpending) * containerHeight;
+                    
+                    if (index === 0) {
+                        pathData += `M ${x} ${y}`;
+                    } else {
+                        pathData += ` L ${x} ${y}`;
+                    }
+                });
+                
+                path.setAttribute('d', pathData);
+                path.setAttribute('stroke', 'black');
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('fill', 'none');
+                svg.appendChild(path);
+                
+                // Add data points
+                monthlyData.forEach((data, index) => {
+                    const x = (index / (monthlyData.length - 1)) * containerWidth;
+                    const y = containerHeight - (data.spending / maxSpending) * containerHeight;
+                    
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', x);
+                    circle.setAttribute('cy', y);
+                    circle.setAttribute('r', '4');
+                    circle.setAttribute('fill', 'black');
+                    circle.setAttribute('cursor', 'pointer');
+                    
+                    // Add tooltip
+                    circle.addEventListener('mouseenter', (e) => {
+                        const tooltip = document.createElement('div');
+                        tooltip.className = 'custom-tooltip';
+                        tooltip.textContent = `${this.getMonthName(data.month)} ${data.year}\n$${data.spending.toFixed(2)}`;
+                        tooltip.style.display = 'block';
+                        document.body.appendChild(tooltip);
+                        this.updateTooltipPosition(e, tooltip);
+                    });
+                    
+                    circle.addEventListener('mouseleave', () => {
+                        const tooltip = document.querySelector('.custom-tooltip');
+                        if (tooltip) tooltip.remove();
+                    });
+                    
+                    svg.appendChild(circle);
+                });
+                
+                chartContainer.appendChild(svg);
+            }
+
+            renderSubscriptionBreakdown() {
+                const breakdownContainer = document.getElementById('subscriptionBreakdown');
+                breakdownContainer.innerHTML = '';
+                
+                if (this.subscriptions.length === 0) {
+                    breakdownContainer.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No subscriptions added yet</p>';
+                    return;
+                }
+                
+                // Calculate insights
+                const monthlyCost = this.calculateCurrentMonthSpending();
+                const yearlyCost = this.subscriptions.reduce((sum, sub) => {
+                    const price = sub.price;
+                    switch (sub.billingCycle) {
+                        case 'weekly': return sum + price * 52;
+                        case 'monthly': return sum + price * 12;
+                        case 'yearly': return sum + price;
+                        default: return sum;
+                    }
+                }, 0);
+                
+                const averagePerSubscription = monthlyCost / this.subscriptions.length;
+                const mostExpensive = Math.max(...this.subscriptions.map(sub => sub.price));
+                const budget = JSON.parse(localStorage.getItem('monthlyBudget')) || 0;
+                const budgetPercentage = budget > 0 ? (monthlyCost / budget) * 100 : 0;
+                
+                // Add insights section
+                const insightsSection = document.createElement('div');
+                insightsSection.className = 'insights-grid';
+                insightsSection.style.marginBottom = '20px';
+                
+                // Calculate additional metrics
+                const totalSubscriptions = this.subscriptions.length;
+                const weeklySubscriptions = this.subscriptions.filter(sub => sub.billingCycle === 'weekly').length;
+                const monthlySubscriptions = this.subscriptions.filter(sub => sub.billingCycle === 'monthly').length;
+                const yearlySubscriptions = this.subscriptions.filter(sub => sub.billingCycle === 'yearly').length;
+                const weeklyCost = this.subscriptions
+                    .filter(sub => sub.billingCycle === 'weekly')
+                    .reduce((sum, sub) => sum + sub.price, 0) * 4.33; // Convert to monthly
+                const monthlyCostWeekly = this.subscriptions
+                    .filter(sub => sub.billingCycle === 'monthly')
+                    .reduce((sum, sub) => sum + sub.price, 0);
+                const monthlyCostYearly = this.subscriptions
+                    .filter(sub => sub.billingCycle === 'yearly')
+                    .reduce((sum, sub) => sum + sub.price, 0) / 12;
+                const totalMonthlySubscriptions = weeklyCost + monthlyCostWeekly + monthlyCostYearly;
+
+                const insights = [
+                    {
+                        title: 'Average per Subscription',
+                        value: `$${averagePerSubscription.toFixed(2)}`,
+                        description: 'Monthly cost per subscription'
+                    },
+                    {
+                        title: 'Monthly Subscriptions',
+                        value: `${monthlySubscriptions}`,
+                        description: 'Number of monthly subscriptions'
+                    },
+                    {
+                        title: 'Most Expensive',
+                        value: `$${mostExpensive.toFixed(2)}`,
+                        description: 'Highest single subscription cost'
+                    },
+                    {
+                        title: 'Budget Usage',
+                        value: budget > 0 ? `${budgetPercentage.toFixed(1)}%` : 'Not set',
+                        description: budget > 0 ? 'Of your monthly budget' : 'Set a budget to track usage'
+                    },
+                    {
+                        title: 'Yearly Projection',
+                        value: `$${yearlyCost.toFixed(2)}`,
+                        description: 'Total projected yearly spending'
+                    },
+                    {
+                        title: 'Total Subscriptions',
+                        value: `${totalSubscriptions}`,
+                        description: 'All active subscriptions'
+                    }
+                ];
+                
+                insights.forEach(insight => {
+                    const item = document.createElement('div');
+                    item.className = 'insight-item';
+                    item.innerHTML = `
+                        <h4>${insight.title}</h4>
+                        <div class="insight-value">${insight.value}</div>
+                        <p>${insight.description}</p>
+                    `;
+                    insightsSection.appendChild(item);
+                });
+                
+                breakdownContainer.appendChild(insightsSection);
+                
+                // Group subscriptions by billing cycle (excluding monthly)
+                const grouped = {
+                    yearly: this.subscriptions.filter(sub => sub.billingCycle === 'yearly'),
+                    weekly: this.subscriptions.filter(sub => sub.billingCycle === 'weekly')
+                };
+                
+                // Add breakdown section
+                const breakdownSection = document.createElement('div');
+                breakdownSection.className = 'subscription-breakdown';
+                breakdownSection.style.marginTop = '20px';
+                
+                Object.keys(grouped).forEach(cycle => {
+                    if (grouped[cycle].length > 0) {
+                        const totalCost = grouped[cycle].reduce((sum, sub) => sum + sub.price, 0);
+                        const monthlyEquivalent = cycle === 'monthly' ? totalCost : 
+                                               cycle === 'yearly' ? totalCost / 12 : 
+                                               totalCost * 4.33;
+                        
+                        const item = document.createElement('div');
+                        item.className = 'breakdown-item';
+                        item.innerHTML = `
+                            <h4>${cycle.charAt(0).toUpperCase() + cycle.slice(1)} Subscriptions</h4>
+                            <div class="price">$${totalCost.toFixed(2)}</div>
+                            <p>${grouped[cycle].length} subscription${grouped[cycle].length > 1 ? 's' : ''}</p>
+                            <p>Monthly equivalent: $${monthlyEquivalent.toFixed(2)}</p>
+                        `;
+                        breakdownSection.appendChild(item);
+                    }
+                });
+                
+                breakdownContainer.appendChild(breakdownSection);
+            }
+
+
+            getMonthName(monthIndex) {
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                return months[monthIndex];
+            }
+
+            renderSubscriptionsList() {
+                const subscriptionsList = document.getElementById('subscriptionsList');
+                subscriptionsList.innerHTML = '';
+
+                if (this.subscriptions.length === 0) {
+                    subscriptionsList.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No subscriptions added yet. Click the + button to add your first subscription!</p>';
+                    return;
+                }
+
+                this.subscriptions.forEach(subscription => {
+                    const subscriptionCard = document.createElement('div');
+                    subscriptionCard.className = 'subscription-card';
+                    subscriptionCard.innerHTML = `
+                        <div class="subscription-header">
+                            <div class="subscription-info">
+                                <div class="subscription-color" style="background-color: ${subscription.color}"></div>
+                                <div class="subscription-details">
+                                    <h4>${subscription.name}</h4>
+                                    <p><strong>$${subscription.price}</strong> ${subscription.billingCycle}</p>
+                                </div>
+                            </div>
+                            <div class="subscription-actions">
+                                <button class="btn btn-secondary" onclick="calendar.deleteSubscription(${subscription.id})">Delete</button>
+                            </div>
+                        </div>
+                        <div class="subscription-details-expanded" id="details-${subscription.id}">
+                            <div class="details-grid">
+                                <div class="detail-item">
+                                    <h5>Basic Info</h5>
+                                    <p><strong>Name:</strong> ${subscription.name}</p>
+                                    <p><strong>Price:</strong> $${subscription.price}</p>
+                                    <p><strong>Billing Cycle:</strong> ${subscription.billingCycle}</p>
+                                    <p><strong>Start Date:</strong> ${new Date(subscription.startDate).toLocaleDateString()}</p>
+                                </div>
+                                <div class="detail-item">
+                                    <h5>Billing Info</h5>
+                                    <p><strong>Next Billing:</strong> ${new Date(subscription.nextBillingDate).toLocaleDateString()}</p>
+                                    <p><strong>Color:</strong> <span style="color: ${subscription.color}">●</span> ${subscription.color}</p>
+                                    <p><strong>Created:</strong> ${new Date(subscription.id).toLocaleDateString()}</p>
+                                </div>
+                                <div class="detail-item">
+                                    <h5>12-Month Projection</h5>
+                                    <p><strong>Total Cost:</strong> $${this.calculate12MonthCost(subscription).toFixed(2)}</p>
+                                    <p><strong>Average/Month:</strong> $${(this.calculate12MonthCost(subscription) / 12).toFixed(2)}</p>
+                                    <p><strong>Billing Count:</strong> ${this.getBillingCount(subscription)} times</p>
+                                </div>
+                            </div>
+                            <div class="projection-chart">
+                                <h5>Monthly Breakdown (Next 12 Months)</h5>
+                                <div class="monthly-breakdown">
+                                    ${this.generateMonthlyBreakdown(subscription)}
+                                </div>
+                                <div class="total-projection">
+                                    <h4>$${this.calculate12MonthCost(subscription).toFixed(2)}</h4>
+                                    <p>Total projected cost over 12 months</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Add click event to toggle details
+                    subscriptionCard.addEventListener('click', (e) => {
+                        if (!e.target.closest('.subscription-actions')) {
+                            this.toggleSubscriptionDetails(subscription.id);
+                        }
+                    });
+                    
+                    subscriptionsList.appendChild(subscriptionCard);
+                });
+            }
+
+            toggleSubscriptionDetails(subscriptionId) {
+                const detailsElement = document.getElementById(`details-${subscriptionId}`);
+                const cardElement = detailsElement.closest('.subscription-card');
+                
+                if (detailsElement.classList.contains('show')) {
+                    detailsElement.classList.remove('show');
+                    cardElement.classList.remove('expanded');
+                } else {
+                    // Close all other expanded cards
+                    document.querySelectorAll('.subscription-card.expanded').forEach(card => {
+                        card.classList.remove('expanded');
+                        card.querySelector('.subscription-details-expanded').classList.remove('show');
+                    });
+                    
+                    detailsElement.classList.add('show');
+                    cardElement.classList.add('expanded');
+                }
+            }
+
+            calculate12MonthCost(subscription) {
+                const startDate = new Date(subscription.startDate);
+                const endDate = new Date(startDate);
+                endDate.setFullYear(endDate.getFullYear() + 1);
+                
+                let totalCost = 0;
+                let currentDate = new Date(startDate);
+                
+                while (currentDate < endDate) {
+                    totalCost += subscription.price;
+                    
+                    // Calculate next billing date
+                    switch (subscription.billingCycle) {
+                        case 'weekly':
+                            currentDate.setDate(currentDate.getDate() + 7);
+                            break;
+                        case 'monthly':
+                            currentDate.setMonth(currentDate.getMonth() + 1);
+                            break;
+                        case 'yearly':
+                            currentDate.setFullYear(currentDate.getFullYear() + 1);
+                            break;
+                    }
+                }
+                
+                return totalCost;
+            }
+
+            getBillingCount(subscription) {
+                const startDate = new Date(subscription.startDate);
+                const endDate = new Date(startDate);
+                endDate.setFullYear(endDate.getFullYear() + 1);
+                
+                let count = 0;
+                let currentDate = new Date(startDate);
+                
+                while (currentDate < endDate) {
+                    count++;
+                    
+                    switch (subscription.billingCycle) {
+                        case 'weekly':
+                            currentDate.setDate(currentDate.getDate() + 7);
+                            break;
+                        case 'monthly':
+                            currentDate.setMonth(currentDate.getMonth() + 1);
+                            break;
+                        case 'yearly':
+                            currentDate.setFullYear(currentDate.getFullYear() + 1);
+                            break;
+                    }
+                }
+                
+                return count;
+            }
+
+            generateMonthlyBreakdown(subscription) {
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const startDate = new Date(subscription.startDate);
+                const currentDate = new Date();
+                
+                let html = '';
+                
+                for (let i = 0; i < 12; i++) {
+                    const monthDate = new Date(currentDate);
+                    monthDate.setMonth(monthDate.getMonth() + i);
+                    
+                    let monthlyCost = 0;
+                    
+                    if (subscription.billingCycle === 'monthly') {
+                        monthlyCost = subscription.price;
+                    } else if (subscription.billingCycle === 'yearly') {
+                        // Check if this month has a yearly billing
+                        const yearlyDate = new Date(startDate);
+                        yearlyDate.setFullYear(monthDate.getFullYear());
+                        if (yearlyDate.getMonth() === monthDate.getMonth()) {
+                            monthlyCost = subscription.price;
+                        }
+                    } else if (subscription.billingCycle === 'weekly') {
+                        // Calculate weekly costs for this month
+                        const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+                        const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+                        
+                        let weekDate = new Date(startDate);
+                        while (weekDate <= lastDay) {
+                            if (weekDate >= firstDay) {
+                                monthlyCost += subscription.price;
+                            }
+                            weekDate.setDate(weekDate.getDate() + 7);
+                        }
+                    }
+                    
+                    html += `
+                        <div class="month-item">
+                            <h6>${months[monthDate.getMonth()]}</h6>
+                            <p>$${monthlyCost.toFixed(2)}</p>
+                        </div>
+                    `;
+                }
+                
+                return html;
+            }
+
+            loadNotificationSettings() {
+                const settings = JSON.parse(localStorage.getItem('notificationSettings')) || {};
+                document.getElementById('emailAddress').value = settings.emailAddress || '';
+                document.getElementById('notificationDays').value = settings.notificationDays || '7';
+                document.getElementById('notificationTime').value = settings.notificationTime || '12:00';
+                
+                const enableNotifications = settings.enableNotifications || false;
+                const enableTelegram = settings.enableTelegram || false;
+                
+                document.getElementById('enableNotifications').checked = enableNotifications;
+                document.getElementById('enableTelegram').checked = enableTelegram;
+                
+                // Set toggle visual states
+                const emailToggle = document.getElementById('enableNotifications');
+                const telegramToggle = document.getElementById('enableTelegram');
+                
+                if (enableNotifications) {
+                    emailToggle.classList.add('active');
+                } else {
+                    emailToggle.classList.remove('active');
+                }
+                
+                if (enableTelegram) {
+                    telegramToggle.classList.add('active');
+                } else {
+                    telegramToggle.classList.remove('active');
+                }
+                
+                // Show/hide settings based on toggle states
+                const emailSettings = document.getElementById('emailSettings');
+                const telegramSettings = document.getElementById('telegramSettings');
+                
+                if (enableNotifications) {
+                    emailSettings.style.display = 'block';
+                } else {
+                    emailSettings.style.display = 'none';
+                }
+                
+                if (enableTelegram) {
+                    telegramSettings.style.display = 'block';
+                } else {
+                    telegramSettings.style.display = 'none';
+                }
+            }
+
+            loadBudgetSettings() {
+                const budget = JSON.parse(localStorage.getItem('monthlyBudget')) || null;
+                if (budget) {
+                    document.getElementById('monthlyBudget').value = budget;
+                    this.updateBudgetProgress();
+                }
+            }
+
+            saveBudget() {
+                const budget = parseFloat(document.getElementById('monthlyBudget').value);
+                if (budget && budget > 0) {
+                    localStorage.setItem('monthlyBudget', JSON.stringify(budget));
+                    this.updateBudgetProgress();
+                } else {
+                    alert('Please enter a valid budget amount.');
+                }
+            }
+
+            calculateCurrentMonthSpending() {
+                const currentDate = new Date();
+                const currentMonth = currentDate.getMonth();
+                const currentYear = currentDate.getFullYear();
+                
+                let monthlySpending = 0;
+                
+                this.subscriptions.forEach(subscription => {
+                    const startDate = new Date(subscription.startDate);
+                    const billingCycle = subscription.billingCycle;
+                    
+                    if (billingCycle === 'monthly') {
+                        // Check if this subscription bills in the current month
+                        if (startDate.getMonth() === currentMonth && startDate.getFullYear() <= currentYear) {
+                            monthlySpending += subscription.price;
+                        }
+                    } else if (billingCycle === 'yearly') {
+                        // Check if this subscription bills in the current month
+                        if (startDate.getMonth() === currentMonth && startDate.getFullYear() <= currentYear) {
+                            monthlySpending += subscription.price;
+                        }
+                    } else if (billingCycle === 'weekly') {
+                        // Calculate weekly costs for the current month
+                        const firstDay = new Date(currentYear, currentMonth, 1);
+                        const lastDay = new Date(currentYear, currentMonth + 1, 0);
+                        
+                        let weekDate = new Date(startDate);
+                        while (weekDate <= lastDay) {
+                            if (weekDate >= firstDay) {
+                                monthlySpending += subscription.price;
+                            }
+                            weekDate.setDate(weekDate.getDate() + 7);
+                        }
+                    }
+                });
+                
+                return monthlySpending;
+            }
+
+            updateBudgetProgress() {
+                const budget = JSON.parse(localStorage.getItem('monthlyBudget'));
+                const budgetProgressContainer = document.getElementById('budgetProgressContainer');
+                
+                if (!budget || budget <= 0) {
+                    budgetProgressContainer.style.display = 'none';
+                    return;
+                }
+                
+                const currentSpending = this.calculateCurrentMonthSpending();
+                const percentage = Math.min((currentSpending / budget) * 100, 100);
+                
+                // Update UI elements
+                document.getElementById('budgetAmount').textContent = `$${budget.toFixed(2)}`;
+                document.getElementById('budgetSpending').textContent = `$${currentSpending.toFixed(2)}`;
+                document.getElementById('budgetPercentage').textContent = `${percentage.toFixed(1)}%`;
+                
+                // Update progress bar
+                const progressFill = document.getElementById('budgetProgressFill');
+                progressFill.style.width = `${percentage}%`;
+                
+                // Update progress bar color based on budget status
+                const isDarkMode = document.body.classList.contains('dark-mode');
+                if (percentage >= 100) {
+                    // Budget exceeded - use red
+                    progressFill.style.background = '#ff0000';
+                } else {
+                    // Normal progress - use solid grey
+                    if (isDarkMode) {
+                        progressFill.style.background = '#cccccc';
+                    } else {
+                        progressFill.style.background = '#666666';
+                    }
+                }
+                
+                // Update status message
+                const budgetStatus = document.getElementById('budgetStatus');
+                if (percentage >= 100) {
+                    budgetStatus.textContent = '⚠️ Budget exceeded!';
+                    budgetStatus.style.color = '#ff0000';
+                } else if (percentage >= 80) {
+                    budgetStatus.textContent = '⚠️ Approaching budget limit';
+                    budgetStatus.style.color = '#FFC107';
+                } else if (percentage >= 50) {
+                    budgetStatus.textContent = '💰 Half of budget used';
+                    budgetStatus.style.color = '#8BC34A';
+                } else {
+                    budgetStatus.textContent = '';
+                    budgetStatus.style.color = '';
+                }
+                
+                budgetProgressContainer.style.display = 'block';
+            }
+
+            saveNotificationSettings() {
+                const settings = {
+                    emailAddress: document.getElementById('emailAddress').value,
+                    notificationDays: document.getElementById('notificationDays').value,
+                    notificationTime: document.getElementById('notificationTime').value,
+                    enableNotifications: document.getElementById('enableNotifications').checked,
+                    enableTelegram: document.getElementById('enableTelegram').checked
+                };
+                localStorage.setItem('notificationSettings', JSON.stringify(settings));
+            }
+
+            async testEmailNotification() {
+                const emailAddress = document.getElementById('emailAddress').value;
+                const testResult = document.getElementById('testResult');
+                
+                if (!emailAddress) {
+                    testResult.innerHTML = '<span style="color: #d32f2f;">Please enter your email address first.</span>';
+                    return;
+                }
+
+                // Save settings
+                this.saveNotificationSettings();
+
+                testResult.innerHTML = '<span style="color: #1976d2;">Sending test email...</span>';
+                
+                try {
+                    const response = await fetch('https://azatech.onrender.com/api/send-test-email', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ emailAddress })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        testResult.innerHTML = `
+                            <span style="color: #388e3c;">
+                                ✅ Test email sent successfully to ${emailAddress}!<br>
+                                <small>Check your inbox for the test email.</small>
+                            </span>
+                        `;
+                    } else {
+                        testResult.innerHTML = `<span style="color: #d32f2f;">❌ Error: ${result.error}</span>`;
+                    }
+                } catch (error) {
+                    testResult.innerHTML = `<span style="color: #d32f2f;">❌ Error: ${error.message}</span>`;
+                }
+            }
+
+            async testTelegramNotification() {
+                const telegramTestResult = document.getElementById('telegramTestResult');
+                
+                telegramTestResult.innerHTML = `
+                    <span style="color: #ff9800;">
+                        🚧 Telegram notifications coming soon!<br>
+                        <small>This feature is being deployed. Please check back later.</small>
+                    </span>
+                `;
+            }
+
+            closeNotification() {
+                const notification = document.getElementById('comingSoonNotification');
+                if (notification) {
+                    notification.style.animation = 'slideOutUp 0.3s ease-in forwards';
+                    setTimeout(() => {
+                        notification.style.display = 'none';
+                    }, 300);
+                }
+            }
+
+            async checkUpcomingBilling() {
+                const settings = JSON.parse(localStorage.getItem('notificationSettings')) || {};
+                if (!settings.enableNotifications || !settings.emailAddress) return;
+
+                try {
+                    const response = await fetch('https://azatech.onrender.com/api/check-upcoming-billing', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            subscriptions: this.subscriptions,
+                            notificationDays: settings.notificationDays,
+                            emailAddress: settings.emailAddress
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success && result.notificationSent) {
+                        console.log(`📧 Billing notification sent for ${result.upcomingSubscriptions.length} subscription(s)`);
+                    }
+                } catch (error) {
+                    console.error('Error checking upcoming billing:', error);
+                }
+            }
+
+            async sendBillingNotification(subscriptions) {
+                const settings = JSON.parse(localStorage.getItem('notificationSettings')) || {};
+                const emailAddress = settings.emailAddress;
+                
+                try {
+                    const response = await fetch('https://azatech.onrender.com/api/send-billing-notification', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            emailAddress,
+                            subscriptions,
+                            daysUntilBilling: settings.notificationDays
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        console.log(`📧 Billing notification sent successfully to ${emailAddress}`);
+                    } else {
+                        console.error('Failed to send billing notification:', result.error);
+                    }
+                } catch (error) {
+                    console.error('Error sending billing notification:', error);
+                }
+            }
+
+            loadSubscriptions() {
+                try {
+                    this.isLoading = true;
+                    this.subscriptions = JSON.parse(localStorage.getItem('subscriptions')) || [];
+                } catch (error) {
+                    console.error('Error loading subscriptions:', error);
+                    this.subscriptions = [];
+                } finally {
+                    this.isLoading = false;
+                }
+            }
+
+            saveSubscriptions() {
+                try {
+                    localStorage.setItem('subscriptions', JSON.stringify(this.subscriptions));
+                } catch (error) {
+                    console.error('Error saving subscriptions:', error);
+                }
+            }
+        }
+
+        // Initialize the calendar when the page loads
+        const calendar = new SubscriptionCalendar();
+    </script>
+</body>
+</html>
