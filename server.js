@@ -11,10 +11,20 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors({
     origin: true, // Allow all origins for now
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(express.static('.'));
+
+// Handle preflight requests
+app.options('*', (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.sendStatus(200);
+});
 
 // Email configuration
 const createTransporter = () => {
@@ -30,6 +40,11 @@ const createTransporter = () => {
 // Routes
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Test endpoint
+app.get('/api/test', (req, res) => {
+    res.json({ success: true, message: 'API is working!' });
 });
 
 // Send test email
